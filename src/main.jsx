@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx' // import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -9,7 +11,8 @@ import {
   ChevronLeft, 
   Pin,
   Clock,
-  Camera
+  Camera,
+  Gift
 } from 'lucide-react';
 
 const FIXED_SUBJECTS = [
@@ -45,10 +48,13 @@ const App = () => {
     return subGrades.length ? (subGrades.reduce((a, b) => a + parseFloat(b.value), 0) / subGrades.length).toFixed(2) : "0.00";
   };
 
+  const totalAverage = grades.length 
+    ? (grades.reduce((a, b) => a + parseFloat(b.value), 0) / grades.length).toFixed(2) 
+    : "0.00";
+
   const addGrade = () => {
     const val = parseFloat(newGradeValue);
     setGrades([...grades, { id: Date.now(), subjectId: selectedSubjectId, value: val }]);
-    // Bonus crediti per voti alti
     if (val >= 8) setCredits(c => c + 1.5);
   };
 
@@ -62,23 +68,55 @@ const App = () => {
   };
 
   const togglePin = (id) => {
-    const pinnedCount = rewards.filter(r => r.pinned).length;
     setRewards(rewards.map(r => {
-      if (r.id === id) {
-        if (!r.pinned && pinnedCount >= 3) return r;
-        return { ...r, pinned: !r.pinned };
-      }
-      return r;
+      if (r.id === id) return { ...r, pinned: !r.pinned };
+      return { ...r, pinned: false }; // Solo una ricompensa pinnata alla volta per il widget
     }));
   };
 
-  // Genera opzioni voti 2-10 step 0.25
   const gradeOptions = [];
   for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
 
-  const pinnedRewards = rewards.filter(r => r.pinned).sort((a, b) => a.cost - b.cost);
-  const maxPinnedCost = pinnedRewards.length > 0 ? pinnedRewards[pinnedRewards.length - 1].cost : 100;
-  const progressPercent = Math.min(100, (credits / maxPinnedCost) * 100);
+  const pinnedReward = rewards.find(r => r.pinned);
+
+  // Componente Pie Chart per la Media
+  const AveragePieChart = ({ value }) => {
+    const radius = 36;
+    const circumference = 2 * Math.PI * radius;
+    const progress = (parseFloat(value) / 10) * circumference;
+    
+    return (
+      <div className="relative flex items-center justify-center w-24 h-24">
+        <svg className="w-full h-full transform -rotate-90">
+          <circle
+            cx="48"
+            cy="48"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            className="text-white/5"
+          />
+          <circle
+            cx="48"
+            cy="48"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference - progress}
+            strokeLinecap="round"
+            className="text-emerald-500 transition-all duration-1000 ease-out"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center flex-col">
+          <span className="text-xl font-bold leading-none">{value}</span>
+          <span className="text-[8px] uppercase text-zinc-500 font-bold tracking-tighter">Media</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-6 pb-24 max-w-md mx-auto font-sans">
@@ -86,7 +124,7 @@ const App = () => {
       <header className="flex justify-between items-start mb-8 pt-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Foundation</h1>
-          <p className="text-amber-500 text-xs font-bold uppercase tracking-widest italic">Reward Dashboard</p>
+          <p className="text-white text-xs font-bold uppercase tracking-widest italic opacity-60">Reward Dashboard</p>
         </div>
         <div className="w-10 h-10 bg-white rounded-lg rotate-45 flex items-center justify-center overflow-hidden">
             <div className="w-full h-full bg-zinc-900 scale-90 rounded-sm"></div>
@@ -96,29 +134,14 @@ const App = () => {
       <main className="transition-all duration-300">
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+            {/* Widget Principale con Pie Chart e Crediti */}
             <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl">
-              <div className="flex justify-between items-end mb-6">
+              <div className="flex justify-between items-center mb-8">
                 <div>
                   <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1 font-bold">Crediti Totali</p>
-                  <h2 className="text-5xl font-bold text-amber-500">{credits.toFixed(1)}</h2>
+                  <h2 className="text-5xl font-bold text-white">{credits.toFixed(1)}</h2>
                 </div>
-                <div className="text-right">
-                  <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Media Gen.</p>
-                  <p className="text-xl font-bold">{(grades.length ? grades.reduce((a,b)=>a+parseFloat(b.value),0)/grades.length : 0).toFixed(2)}</p>
-                </div>
-              </div>
-
-              {/* Progress Widget */}
-              <div className="relative h-2 bg-white/5 rounded-full mb-8">
-                <div 
-                    className="absolute h-full bg-emerald-500 rounded-full transition-all duration-700" 
-                    style={{ width: `${progressPercent}%` }}
-                ></div>
-                {pinnedRewards.map(r => (
-                  <div key={r.id} className="absolute top-0 w-0.5 h-full bg-white/30" style={{ left: `${(r.cost / maxPinnedCost) * 100}%` }}>
-                    <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-black text-zinc-500">{r.cost}</div>
-                  </div>
-                ))}
+                <AveragePieChart value={totalAverage} />
               </div>
 
               <div className="flex gap-2">
@@ -130,6 +153,40 @@ const App = () => {
                 </button>
               </div>
             </div>
+
+            {/* Widget Ricompensa Pinnata */}
+            <div className="bg-zinc-900/50 p-6 rounded-[2rem] border border-white/10">
+              <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-4 font-bold">Obiettivo Corrente</p>
+              {pinnedReward ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-black border border-white/10 overflow-hidden flex-shrink-0">
+                    {pinnedReward.image ? (
+                      <img src={pinnedReward.image} className="w-full h-full object-cover" alt="pinned" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                        <Gift size={24} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-end mb-1">
+                      <h4 className="font-bold text-sm truncate">{pinnedReward.name}</h4>
+                      <span className="text-[10px] font-bold text-white/50">{credits.toFixed(0)} / {pinnedReward.cost} CR</span>
+                    </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-white transition-all duration-700" 
+                        style={{ width: `${Math.min(100, (credits / pinnedReward.cost) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-4 text-center border border-dashed border-white/10 rounded-2xl">
+                  <p className="text-zinc-600 text-xs italic">Nessun premio pinnato nello shop</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -139,7 +196,7 @@ const App = () => {
               <div className="grid grid-cols-2 gap-3">
                 {FIXED_SUBJECTS.map(s => (
                   <button key={s.id} onClick={() => setSelectedSubjectId(s.id)} className="bg-zinc-900/40 p-5 rounded-3xl text-left border border-white/5 hover:bg-zinc-900/60 transition-colors">
-                    <p className="text-amber-500 font-bold text-lg">{calculateAverage(s.id)}</p>
+                    <p className="text-white font-bold text-lg">{calculateAverage(s.id)}</p>
                     <p className="text-zinc-400 text-[10px] uppercase font-black mt-1 tracking-tight">{s.name}</p>
                   </button>
                 ))}
@@ -218,7 +275,7 @@ const App = () => {
                 <div key={r.id} className="bg-zinc-900/40 p-3 rounded-[2rem] border border-white/5 relative group">
                   <button 
                     onClick={() => togglePin(r.id)} 
-                    className={`absolute top-4 left-4 z-10 p-2 rounded-full backdrop-blur-md transition-all ${r.pinned ? 'bg-amber-500 text-black' : 'bg-black/60 text-zinc-500 hover:text-white'}`}
+                    className={`absolute top-4 left-4 z-10 p-2 rounded-full backdrop-blur-md transition-all ${r.pinned ? 'bg-white text-black' : 'bg-black/60 text-zinc-500 hover:text-white'}`}
                   >
                     <Pin size={12} fill={r.pinned ? "currentColor" : "none"}/>
                   </button>
@@ -236,7 +293,7 @@ const App = () => {
                   <div className="px-1 mt-3">
                     <p className="text-xs font-bold truncate">{r.name}</p>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-amber-500 font-black text-sm">{r.cost} CR</span>
+                      <span className="text-white font-black text-sm">{r.cost} CR</span>
                       <button 
                         onClick={() => credits >= r.cost && setCredits(c => c - r.cost)} 
                         disabled={credits < r.cost} 
@@ -264,7 +321,7 @@ const App = () => {
       <nav className="fixed bottom-6 left-6 right-6 h-20 bg-zinc-900/80 backdrop-blur-2xl rounded-[2.5rem] flex justify-around items-center px-4 max-w-md mx-auto border border-white/10 shadow-2xl">
         <button 
             onClick={() => setActiveTab('dashboard')} 
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'dashboard' ? 'text-amber-500 scale-110' : 'text-zinc-600'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'dashboard' ? 'text-white scale-110' : 'text-zinc-600'}`}
         >
           <BookOpen size={24} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2}/>
           <span className="text-[8px] font-bold uppercase tracking-widest">Home</span>
@@ -272,7 +329,7 @@ const App = () => {
         
         <button 
             onClick={() => {setActiveTab('subjects'); setSelectedSubjectId(null);}} 
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'subjects' ? 'text-amber-500 scale-110' : 'text-zinc-600'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'subjects' ? 'text-white scale-110' : 'text-zinc-600'}`}
         >
           <GraduationCap size={24} strokeWidth={activeTab === 'subjects' ? 2.5 : 2}/>
           <span className="text-[8px] font-bold uppercase tracking-widest">Materie</span>
@@ -280,7 +337,7 @@ const App = () => {
         
         <button 
             onClick={() => setActiveTab('shop')} 
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'shop' ? 'text-amber-500 scale-110' : 'text-zinc-600'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'shop' ? 'text-white scale-110' : 'text-zinc-600'}`}
         >
           <ShoppingBag size={24} strokeWidth={activeTab === 'shop' ? 2.5 : 2}/>
           <span className="text-[8px] font-bold uppercase tracking-widest">Shop</span>
@@ -291,3 +348,10 @@ const App = () => {
 };
 
 export default App;
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+
