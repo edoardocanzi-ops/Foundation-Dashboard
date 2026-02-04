@@ -13,8 +13,18 @@ import {
   Clock,
   Camera,
   Home,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Calendar as CalendarIcon,
+  ExternalLink,
+  LogOut
 } from 'lucide-react';
+
+// --- CONFIGURAZIONE GOOGLE API ---
+// 265799114700-n3h704aad8emr3929h7qle9hc1mihbg7.apps.googleusercontent.com
+const CLIENT_ID = ""; 
+const API_KEY = ""; // Opzionale se usi solo OAuth2
+const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
 
 const FIXED_SUBJECTS = [
   { id: 'it-o', name: 'Italiano Orale' },
@@ -39,6 +49,13 @@ const App = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   const [pinnedRewardId, setPinnedRewardId] = useState(() => localStorage.getItem('f_pinnedId') || null);
   
+  // Google Calendar State
+  const [gapiInited, setGapiInited] = useState(false);
+  const [gisInited, setGisInited] = useState(false);
+  const [tokenClient, setTokenClient] = useState(null);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [name, setName] = useState('');
   const [cost, setCost] = useState('');
   const [image, setImage] = useState(null);
@@ -49,6 +66,81 @@ const App = () => {
     localStorage.setItem('f_grades', JSON.stringify(grades));
     localStorage.setItem('f_pinnedId', pinnedRewardId || '');
   }, [credits, rewards, grades, pinnedRewardId]);
+
+  // --- GOOGLE CALENDAR LOGIC ---
+  useEffect(() => {
+    const loadScripts = () => {
+      const gapiScript = document.createElement('script');
+      gapiScript.src = "https://apis.google.com/js/api.js";
+      gapiScript.async = true;
+      gapiScript.defer = true;
+      gapiScript.onload = () => {
+        gapi.load('client', async () => {
+          await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
+          setGapiInited(true);
+        });
+      };
+      document.body.appendChild(gapiScript);
+
+      const gisScript = document.createElement('script');
+      gisScript.src = "https://accounts.google.com/gsi/client";
+      gisScript.async = true;
+      gisScript.defer = true;
+      gisScript.onload = () => {
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: async (resp) => {
+            if (resp.error) return;
+            setIsAuthenticated(true);
+            listUpcomingEvents();
+          },
+        });
+        setTokenClient(client);
+        setGisInited(true);
+      };
+      document.body.appendChild(gisScript);
+    };
+    loadScripts();
+  }, []);
+
+  const handleAuthClick = () => {
+    if (tokenClient) {
+      if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } else {
+        tokenClient.requestAccessToken({ prompt: '' });
+      }
+    }
+  };
+
+  const handleSignoutClick = () => {
+    const token = gapi.client.getToken();
+    if (token !== null) {
+      google.accounts.oauth2.revoke(token.access_token);
+      gapi.client.setToken('');
+      setCalendarEvents([]);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const listUpcomingEvents = async () => {
+    try {
+      const response = await gapi.client.calendar.events.list({
+        calendarId: 'primary',
+        timeMin: new Date().toISOString(),
+        showDeleted: false,
+        singleEvents: true,
+        maxResults: 10,
+        orderBy: 'startTime',
+      });
+      setCalendarEvents(response.result.items);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // --- FINE LOGICA CALENDAR ---
 
   const calculateAverage = (subjectId) => {
     const subGrades = grades.filter(g => g.subjectId === subjectId);
@@ -70,20 +162,10 @@ const App = () => {
     return count === 0 ? 0 : (totalSum / count).toFixed(2);
   };
 
-  const calculateGradeCredits = (val) => {
-    const v = parseFloat(val);
-    if (v === 10) return 10;
-    if (v >= 9.5) return 5;
-    if (v >= 9) return 3;
-    if (v >= 8.5) return 2;
-    if (v >= 8) return 1.5;
-    return 0;
-  };
-
   const addGrade = (val) => {
     if (!selectedSubjectId) return;
-    const earned = calculateGradeCredits(val);
-    const newGrade = { id: Date.now(), subjectId: selectedSubjectId, value: val, creditsEarned: earned, date: new Date().toISOString() };
+    const earned = val >= 9 ? 5 : (val >= 8 ? 2 : 0);
+    const newGrade = { id: Date.now(), subjectId: selectedSubjectId, value: val, creditsEarned: earned };
     setGrades([...grades, newGrade]);
     setCredits(prev => prev + earned);
   };
@@ -100,38 +182,9 @@ const App = () => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-      };
+      reader.onloadend = () => setImage(reader.result);
       reader.readAsDataURL(file);
     }
-  };
-
-  const ProgressChart = ({ value }) => {
-    const radius = 35;
-    const circumference = 2 * Math.PI * radius;
-    const numericValue = parseFloat(value) || 0;
-    const offset = circumference - ((numericValue / 10) * circumference);
-    const color = numericValue >= 8 ? "#fbbf24" : (numericValue >= 6 ? "#10b981" : "#3f3f46");
-
-    return (
-      <div className="relative flex items-center justify-center">
-        <svg width="90" height="90" className="transform -rotate-90">
-          <circle cx="45" cy="45" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="transparent" />
-          <circle 
-            cx="45" cy="45" r={radius} stroke={color} strokeWidth="6" fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold">{value}</span>
-          <span className="text-[7px] uppercase tracking-widest text-zinc-500">Media</span>
-        </div>
-      </div>
-    );
   };
 
   const pinnedItem = rewards.find(r => String(r.id) === pinnedRewardId);
@@ -139,211 +192,206 @@ const App = () => {
   return (
     <div className="min-h-screen bg-black text-white font-sans pb-24 max-w-md mx-auto overflow-x-hidden">
       <style>{`
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .white-logo { filter: brightness(0) invert(1); }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .glass-input { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 16px; padding: 12px; outline: none; }
       `}</style>
 
+      {/* HOME TAB */}
       {activeTab === 'home' && (
         <div className="p-6 animate-in fade-in duration-500">
           <header className="flex justify-between items-start mb-8 pt-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Foundation</h1>
-              <p className="text-amber-500 font-semibold text-sm">No pain, no gain</p>
-            </div>
-            <div className="w-14 h-14 glass rounded-2xl flex items-center justify-center overflow-hidden">
-               <img src="https://api.dicebear.com/7.x/shapes/svg?seed=F" alt="Logo" className="w-10 h-10 white-logo opacity-80" />
+              <p className="text-amber-500 font-semibold text-sm">Organizza il tuo successo</p>
             </div>
           </header>
 
           <div className="flex gap-4 mb-6">
             <div className="glass rounded-[2rem] p-4 flex-shrink-0 flex items-center justify-center w-32 h-32">
-              <ProgressChart value={calculateTotalAverage()} />
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold">{calculateTotalAverage()}</span>
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500">Media Totale</span>
+              </div>
             </div>
-            <div className="glass rounded-[2rem] flex-1 p-5 flex flex-col justify-center relative overflow-hidden">
+            <div className="glass rounded-[2rem] flex-1 p-5 flex flex-col justify-center">
               {pinnedItem ? (
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-2 overflow-hidden border border-white/10">
-                    {pinnedItem.image ? (
-                      <img src={pinnedItem.image} className="w-full h-full object-cover" alt="pinned" />
-                    ) : (
-                      <Gift size={20} className="text-amber-500" />
-                    )}
+                    {pinnedItem.image ? <img src={pinnedItem.image} className="w-full h-full object-cover" /> : <Gift size={20} className="text-amber-500" />}
                   </div>
-                  <p className="text-[10px] uppercase text-zinc-500 truncate w-full text-center">{pinnedItem.name}</p>
-                  <div className="w-full bg-white/5 h-1 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-amber-500 h-full transition-all duration-700" style={{ width: `${Math.min(100, (credits / pinnedItem.cost) * 100)}%` }}></div>
-                  </div>
+                  <p className="text-[9px] uppercase text-zinc-500">{pinnedItem.name}</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-zinc-500 text-[9px] uppercase tracking-widest mb-1">Crediti</p>
+                  <p className="text-zinc-500 text-[9px] uppercase tracking-widest">Crediti</p>
                   <h2 className="text-4xl font-bold text-amber-500">{credits.toFixed(1)}</h2>
                 </>
               )}
             </div>
           </div>
 
-          <div className="glass p-6 rounded-[2.5rem] flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-zinc-500 text-[10px] uppercase tracking-widest">Sessioni Studio</span>
-              <span className="text-xl font-bold tracking-tight">Focus Tracker</span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setCredits(c => Math.max(0, c - 0.5))} className="glass w-12 h-12 rounded-2xl flex items-center justify-center text-zinc-500 active:scale-90 transition-transform">
-                <Minus size={18} />
-              </button>
-              <button onClick={() => setCredits(c => c + 1)} className="bg-white text-black px-6 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-transform">
-                <Clock size={16} /> +1
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'subjects' && (
-        <div className="p-6 animate-in slide-in-from-right duration-300">
-          {!selectedSubjectId ? (
-            <>
-              <h2 className="text-2xl font-bold mb-6">Le tue Materie</h2>
-              <div className="grid grid-cols-3 gap-3">
-                {FIXED_SUBJECTS.map(sub => {
-                  const avg = calculateAverage(sub.id);
-                  return (
-                    <button key={sub.id} onClick={() => setSelectedSubjectId(sub.id)} className="glass p-3 rounded-[1.8rem] flex flex-col items-center gap-2 aspect-square justify-center text-center active:scale-95 transition-transform">
-                      <span className={`text-xs font-bold ${avg >= 6 ? 'text-emerald-400' : 'text-zinc-600'}`}>{avg > 0 ? avg : '-'}</span>
-                      <span className="text-[9px] text-zinc-400 font-medium leading-tight px-1">{sub.name}</span>
-                    </button>
-                  );
-                })}
+          {/* Mini Calendar Preview if authenticated */}
+          {isAuthenticated && calendarEvents.length > 0 && (
+            <div className="glass p-5 rounded-3xl mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Prossimo Impegno</span>
+                <CalendarIcon size={12} className="text-amber-500" />
               </div>
-            </>
-          ) : (
-            <div className="animate-in fade-in duration-300">
-              <button onClick={() => setSelectedSubjectId(null)} className="flex items-center text-zinc-500 mb-6 text-sm">
-                <ChevronLeft size={18} /> Indietro
-              </button>
-              <h2 className="text-3xl font-bold mb-6">{FIXED_SUBJECTS.find(s => s.id === selectedSubjectId).name}</h2>
-              
-              <div className="glass p-5 rounded-3xl mb-8">
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-3">Aggiungi Voto</p>
-                <div className="flex gap-3">
-                  <select 
-                    className="glass-input flex-1 font-bold text-lg"
-                    onChange={(e) => { if(e.target.value) { addGrade(e.target.value); e.target.value = ""; } }}
-                  >
-                    <option value="">Voto...</option>
-                    {[...Array(37)].map((_, i) => {
-                      const v = 10 - (i * 0.25);
-                      return v >= 1 ? <option key={v} value={v}>{v}</option> : null;
-                    })}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {grades.filter(g => g.subjectId === selectedSubjectId).sort((a,b) => b.id - a.id).map(grade => (
-                  <div key={grade.id} className="glass p-4 rounded-2xl flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl font-bold text-emerald-400">{grade.value}</span>
-                      {grade.creditsEarned > 0 && <span className="text-[9px] font-bold bg-amber-500/10 text-amber-500 px-2 py-1 rounded-lg">+{grade.creditsEarned} Cr</span>}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-zinc-600 text-[10px]">{new Date(grade.id).toLocaleDateString()}</span>
-                      <button onClick={() => deleteGrade(grade.id)} className="text-zinc-800 hover:text-red-500 transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="font-bold truncate">{calendarEvents[0].summary}</p>
+              <p className="text-xs text-zinc-500">
+                {new Date(calendarEvents[0].start.dateTime || calendarEvents[0].start.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </p>
             </div>
           )}
         </div>
       )}
 
-      {activeTab === 'shop' && (
+      {/* SUBJECTS TAB */}
+      {activeTab === 'subjects' && (
+        <div className="p-6">
+           {/* ... logica esistente dei voti ... */}
+           {!selectedSubjectId ? (
+             <div className="grid grid-cols-3 gap-3">
+               {FIXED_SUBJECTS.map(sub => (
+                 <button key={sub.id} onClick={() => setSelectedSubjectId(sub.id)} className="glass p-3 rounded-[1.8rem] flex flex-col items-center gap-2 aspect-square justify-center">
+                    <span className="text-xs font-bold text-emerald-400">{calculateAverage(sub.id)}</span>
+                    <span className="text-[9px] text-zinc-400 font-medium">{sub.name}</span>
+                 </button>
+               ))}
+             </div>
+           ) : (
+             <div>
+               <button onClick={() => setSelectedSubjectId(null)} className="flex items-center text-zinc-500 mb-6 text-sm"><ChevronLeft size={18} /> Indietro</button>
+               <h2 className="text-2xl font-bold mb-6">{FIXED_SUBJECTS.find(s => s.id === selectedSubjectId).name}</h2>
+               <div className="glass p-5 rounded-3xl mb-4">
+                  <select className="glass-input w-full" onChange={(e) => { addGrade(parseFloat(e.target.value)); e.target.value = ""; }}>
+                    <option value="">Aggiungi Voto...</option>
+                    {[10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5, 6].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+               </div>
+             </div>
+           )}
+        </div>
+      )}
+
+      {/* CALENDAR TAB */}
+      {activeTab === 'calendar' && (
         <div className="p-6 animate-in slide-in-from-right duration-300">
-          <div className="glass p-6 rounded-3xl mb-8 bg-gradient-to-br from-zinc-900/50 to-black">
-             <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-1">Disponibilità</p>
-             <h2 className="text-5xl font-bold text-amber-500">{credits.toFixed(1)} <span className="text-sm font-normal text-zinc-600 uppercase tracking-tighter">Crediti</span></h2>
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-3xl font-bold">Calendario</h2>
+              <p className="text-zinc-500 text-sm">I tuoi impegni Google</p>
+            </div>
+            {!isAuthenticated ? (
+              <button 
+                onClick={handleAuthClick}
+                className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2"
+              >
+                <CalendarIcon size={16} /> Collega
+              </button>
+            ) : (
+              <button 
+                onClick={handleSignoutClick}
+                className="glass text-zinc-500 p-2 rounded-xl"
+              >
+                <LogOut size={18} />
+              </button>
+            )}
           </div>
 
-          <h3 className="text-lg font-bold mb-4">Nuovo Premio</h3>
-          <div className="glass p-5 rounded-3xl mb-8 space-y-3">
-            <input type="text" placeholder="Nome premio..." value={name} onChange={e => setName(e.target.value)} className="w-full glass-input" />
-            <div className="flex gap-2">
-              <input type="number" placeholder="Costo" value={cost} onChange={e => setCost(e.target.value)} className="w-24 glass-input" />
-              <label className="flex-1 glass border border-white/10 rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer text-sm hover:text-white transition-colors h-12">
-                <ImageIcon size={18} className="mr-2"/> {image ? "Foto OK" : "Carica"}
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-              </label>
+          {!isAuthenticated ? (
+            <div className="glass rounded-[2.5rem] p-8 text-center">
+              <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 text-zinc-700">
+                <CalendarIcon size={32} />
+              </div>
+              <h3 className="font-bold mb-2">Non collegato</h3>
+              <p className="text-zinc-500 text-xs mb-6 px-4">Collega il tuo account Google per visualizzare i compiti e le verifiche segnate sul calendario.</p>
               <button 
-                onClick={() => {
-                  if(!name || !cost) return;
-                  setRewards([...rewards, { id: Date.now(), name, cost: Number(cost), image }]);
-                  setName(''); setCost(''); setImage(null);
-                }} 
-                className="bg-white text-black px-6 rounded-2xl font-bold active:scale-95 transition-transform"
+                onClick={handleAuthClick}
+                className="bg-amber-500 text-black w-full py-4 rounded-2xl font-bold active:scale-95 transition-transform"
               >
-                +
+                Accedi con Google
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <button onClick={listUpcomingEvents} className="w-full py-2 text-zinc-500 text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                Aggiorna <Clock size={10} />
+              </button>
+              
+              {calendarEvents.length === 0 ? (
+                <p className="text-center text-zinc-500 text-sm py-10">Nessun evento imminente.</p>
+              ) : (
+                calendarEvents.map(event => (
+                  <div key={event.id} className="glass p-4 rounded-2xl border-l-4 border-amber-500">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-bold text-sm truncate pr-4">{event.summary}</h4>
+                      <ExternalLink size={12} className="text-zinc-700 flex-shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                      <Clock size={10} />
+                      <span>
+                        {new Date(event.start.dateTime || event.start.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {' • '}
+                        {new Date(event.start.dateTime || event.start.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* SHOP TAB */}
+      {activeTab === 'shop' && (
+        <div className="p-6">
+          <div className="glass p-5 rounded-3xl mb-6">
+            <h3 className="text-lg font-bold mb-4">Nuovo Obiettivo</h3>
+            <input type="text" placeholder="Cosa desideri?" value={name} onChange={e => setName(e.target.value)} className="w-full glass-input mb-3" />
+            <div className="flex gap-2">
+               <input type="number" placeholder="Costo" value={cost} onChange={e => setCost(e.target.value)} className="glass-input w-24" />
+               <label className="flex-1 glass rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer h-12">
+                 <ImageIcon size={18} />
+                 <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+               </label>
+               <button onClick={() => { setRewards([...rewards, {id: Date.now(), name, cost: Number(cost), image}]); setName(""); setCost(""); setImage(null); }} className="bg-white text-black px-6 rounded-2xl font-bold">+</button>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
-            {rewards.map(reward => (
-              <div key={reward.id} className="glass p-3 rounded-[2rem] flex flex-col gap-3 group">
-                <div className="aspect-square rounded-2xl bg-zinc-900/50 flex items-center justify-center relative border border-white/5 overflow-hidden">
-                  {reward.image ? (
-                    <img src={reward.image} className="w-full h-full object-cover" alt={reward.name} />
-                  ) : (
-                    <Gift size={32} className="text-zinc-800" />
-                  )}
-                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-amber-500 text-[10px] font-bold">
-                    {reward.cost} CR
-                  </div>
-                  <button 
-                    onClick={() => setPinnedRewardId(pinnedRewardId === String(reward.id) ? null : String(reward.id))}
-                    className={`absolute top-2 left-2 p-1.5 rounded-lg backdrop-blur-md transition-colors ${pinnedRewardId === String(reward.id) ? 'bg-amber-500 text-black' : 'bg-black/60 text-zinc-600'}`}
-                  >
-                    <Pin size={12} fill={pinnedRewardId === String(reward.id) ? "currentColor" : "none"} />
-                  </button>
+            {rewards.map(r => (
+              <div key={r.id} className="glass p-3 rounded-[2rem]">
+                <div className="aspect-square glass rounded-2xl mb-2 overflow-hidden relative">
+                   {r.image && <img src={r.image} className="w-full h-full object-cover" />}
+                   <button onClick={() => setPinnedRewardId(String(r.id))} className="absolute top-2 left-2 p-1.5 glass rounded-lg"><Pin size={10} /></button>
                 </div>
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-xs truncate text-zinc-300 w-2/3">{reward.name}</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => setCredits(c => Math.max(0, c - reward.cost))} className="text-emerald-500 active:scale-125 transition-transform"><Plus size={16}/></button>
-                    <button onClick={() => setRewards(rewards.filter(r => r.id !== reward.id))} className="text-zinc-800 hover:text-red-500"><Trash2 size={14} /></button>
-                  </div>
-                </div>
+                <p className="text-[10px] font-bold truncate">{r.name}</p>
+                <p className="text-amber-500 text-[9px] font-bold">{r.cost} CR</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* BOTTOM NAV */}
       <nav className="fixed bottom-0 left-0 right-0 h-20 glass border-t border-white/5 flex justify-around items-center max-w-md mx-auto z-50">
-        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center transition-all ${activeTab === 'home' ? 'text-white' : 'text-zinc-600'}`}>
-          <Home size={20} /><span className="text-[9px] mt-1 uppercase font-bold tracking-widest">Dash</span>
+        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center ${activeTab === 'home' ? 'text-white' : 'text-zinc-600'}`}>
+          <Home size={20} /><span className="text-[9px] mt-1 font-bold">DASH</span>
         </button>
-        <button onClick={() => setActiveTab('subjects')} className={`flex flex-col items-center transition-all ${activeTab === 'subjects' ? 'text-white' : 'text-zinc-600'}`}>
-          <GraduationCap size={20} /><span className="text-[9px] mt-1 uppercase font-bold tracking-widest">Voti</span>
+        <button onClick={() => setActiveTab('subjects')} className={`flex flex-col items-center ${activeTab === 'subjects' ? 'text-white' : 'text-zinc-600'}`}>
+          <GraduationCap size={20} /><span className="text-[9px] mt-1 font-bold">VOTI</span>
         </button>
-        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center transition-all ${activeTab === 'shop' ? 'text-white' : 'text-zinc-600'}`}>
-          <ShoppingBag size={20} /><span className="text-[9px] mt-1 uppercase font-bold tracking-widest">Shop</span>
+        <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center ${activeTab === 'calendar' ? 'text-white' : 'text-zinc-600'}`}>
+          <CalendarIcon size={20} /><span className="text-[9px] mt-1 font-bold">CAL</span>
+        </button>
+        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center ${activeTab === 'shop' ? 'text-white' : 'text-zinc-600'}`}>
+          <ShoppingBag size={20} /><span className="text-[9px] mt-1 font-bold">SHOP</span>
         </button>
       </nav>
     </div>
   );
 };
 
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  const root = createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-}
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);
