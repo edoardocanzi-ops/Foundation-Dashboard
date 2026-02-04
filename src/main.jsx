@@ -1,6 +1,5 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx' // import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom/client';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -349,9 +348,10 @@ const App = () => {
 
 export default App;
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+// Rendering dell'app (Necessario per Vercel/Vite)
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-)
-
+  </React.StrictMode>
+);
