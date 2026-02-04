@@ -20,9 +20,8 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURAZIONE GOOGLE API ---
-// 265799114700-n3h704aad8emr3929h7qle9hc1mihbg7.apps.googleusercontent.com
-const CLIENT_ID = ""; 
-const API_KEY = ""; // Opzionale se usi solo OAuth2
+const CLIENT_ID = "265799114700-n3h704aad8emr3929h7qle9hc1mihbg7.apps.googleusercontent.com"; 
+const API_KEY = ""; 
 const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
 const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
 
@@ -106,11 +105,7 @@ const App = () => {
 
   const handleAuthClick = () => {
     if (tokenClient) {
-      if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-      } else {
-        tokenClient.requestAccessToken({ prompt: '' });
-      }
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     }
   };
 
@@ -140,8 +135,6 @@ const App = () => {
     }
   };
 
-  // --- FINE LOGICA CALENDAR ---
-
   const calculateAverage = (subjectId) => {
     const subGrades = grades.filter(g => g.subjectId === subjectId);
     if (subGrades.length === 0) return 0;
@@ -170,14 +163,6 @@ const App = () => {
     setCredits(prev => prev + earned);
   };
 
-  const deleteGrade = (id) => {
-    const grade = grades.find(g => g.id === id);
-    if (grade) {
-      setCredits(prev => Math.max(0, prev - grade.creditsEarned));
-      setGrades(grades.filter(g => g.id !== id));
-    }
-  };
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -196,13 +181,13 @@ const App = () => {
         .glass-input { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 16px; padding: 12px; outline: none; }
       `}</style>
 
-      {/* HOME TAB */}
+      {/* --- HOME TAB --- */}
       {activeTab === 'home' && (
-        <div className="p-6 animate-in fade-in duration-500">
+        <div className="p-6">
           <header className="flex justify-between items-start mb-8 pt-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Foundation</h1>
-              <p className="text-amber-500 font-semibold text-sm">Organizza il tuo successo</p>
+              <p className="text-amber-500 font-semibold text-sm">No pain, no gain</p>
             </div>
           </header>
 
@@ -210,46 +195,30 @@ const App = () => {
             <div className="glass rounded-[2rem] p-4 flex-shrink-0 flex items-center justify-center w-32 h-32">
               <div className="flex flex-col items-center">
                 <span className="text-2xl font-bold">{calculateTotalAverage()}</span>
-                <span className="text-[7px] uppercase tracking-widest text-zinc-500">Media Totale</span>
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500">Media</span>
               </div>
             </div>
             <div className="glass rounded-[2rem] flex-1 p-5 flex flex-col justify-center">
-              {pinnedItem ? (
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-2 overflow-hidden border border-white/10">
-                    {pinnedItem.image ? <img src={pinnedItem.image} className="w-full h-full object-cover" /> : <Gift size={20} className="text-amber-500" />}
-                  </div>
-                  <p className="text-[9px] uppercase text-zinc-500">{pinnedItem.name}</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-zinc-500 text-[9px] uppercase tracking-widest">Crediti</p>
-                  <h2 className="text-4xl font-bold text-amber-500">{credits.toFixed(1)}</h2>
-                </>
-              )}
+                <p className="text-zinc-500 text-[9px] uppercase tracking-widest">Crediti</p>
+                <h2 className="text-4xl font-bold text-amber-500">{credits.toFixed(1)}</h2>
             </div>
           </div>
 
-          {/* Mini Calendar Preview if authenticated */}
           {isAuthenticated && calendarEvents.length > 0 && (
-            <div className="glass p-5 rounded-3xl mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Prossimo Impegno</span>
+            <div className="glass p-5 rounded-3xl mb-6 border-l-4 border-amber-500">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] uppercase font-bold text-zinc-500">Prossimo Impegno</span>
                 <CalendarIcon size={12} className="text-amber-500" />
               </div>
-              <p className="font-bold truncate">{calendarEvents[0].summary}</p>
-              <p className="text-xs text-zinc-500">
-                {new Date(calendarEvents[0].start.dateTime || calendarEvents[0].start.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-              </p>
+              <p className="font-bold truncate text-sm">{calendarEvents[0].summary}</p>
             </div>
           )}
         </div>
       )}
 
-      {/* SUBJECTS TAB */}
+      {/* --- SUBJECTS TAB --- */}
       {activeTab === 'subjects' && (
         <div className="p-6">
-           {/* ... logica esistente dei voti ... */}
            {!selectedSubjectId ? (
              <div className="grid grid-cols-3 gap-3">
                {FIXED_SUBJECTS.map(sub => (
@@ -264,7 +233,7 @@ const App = () => {
                <button onClick={() => setSelectedSubjectId(null)} className="flex items-center text-zinc-500 mb-6 text-sm"><ChevronLeft size={18} /> Indietro</button>
                <h2 className="text-2xl font-bold mb-6">{FIXED_SUBJECTS.find(s => s.id === selectedSubjectId).name}</h2>
                <div className="glass p-5 rounded-3xl mb-4">
-                  <select className="glass-input w-full" onChange={(e) => { addGrade(parseFloat(e.target.value)); e.target.value = ""; }}>
+                  <select className="glass-input w-full" onChange={(e) => { if(e.target.value) addGrade(parseFloat(e.target.value)); e.target.value = ""; }}>
                     <option value="">Aggiungi Voto...</option>
                     {[10, 9.5, 9, 8.5, 8, 7.5, 7, 6.5, 6].map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
@@ -274,26 +243,20 @@ const App = () => {
         </div>
       )}
 
-      {/* CALENDAR TAB */}
+      {/* --- CALENDAR TAB (QUESTA È QUELLA CHE CERCAVI!) --- */}
       {activeTab === 'calendar' && (
         <div className="p-6 animate-in slide-in-from-right duration-300">
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex justify-between items-end mb-8 pt-8">
             <div>
               <h2 className="text-3xl font-bold">Calendario</h2>
               <p className="text-zinc-500 text-sm">I tuoi impegni Google</p>
             </div>
             {!isAuthenticated ? (
-              <button 
-                onClick={handleAuthClick}
-                className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2"
-              >
+              <button onClick={handleAuthClick} className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2">
                 <CalendarIcon size={16} /> Collega
               </button>
             ) : (
-              <button 
-                onClick={handleSignoutClick}
-                className="glass text-zinc-500 p-2 rounded-xl"
-              >
+              <button onClick={handleSignoutClick} className="glass text-zinc-500 p-2 rounded-xl">
                 <LogOut size={18} />
               </button>
             )}
@@ -306,10 +269,7 @@ const App = () => {
               </div>
               <h3 className="font-bold mb-2">Non collegato</h3>
               <p className="text-zinc-500 text-xs mb-6 px-4">Collega il tuo account Google per visualizzare i compiti e le verifiche segnate sul calendario.</p>
-              <button 
-                onClick={handleAuthClick}
-                className="bg-amber-500 text-black w-full py-4 rounded-2xl font-bold active:scale-95 transition-transform"
-              >
+              <button onClick={handleAuthClick} className="bg-amber-500 text-black w-full py-4 rounded-2xl font-bold active:scale-95 transition-transform">
                 Accedi con Google
               </button>
             </div>
@@ -318,7 +278,6 @@ const App = () => {
               <button onClick={listUpcomingEvents} className="w-full py-2 text-zinc-500 text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
                 Aggiorna <Clock size={10} />
               </button>
-              
               {calendarEvents.length === 0 ? (
                 <p className="text-center text-zinc-500 text-sm py-10">Nessun evento imminente.</p>
               ) : (
@@ -344,28 +303,20 @@ const App = () => {
         </div>
       )}
 
-      {/* SHOP TAB */}
+      {/* --- SHOP TAB --- */}
       {activeTab === 'shop' && (
         <div className="p-6">
-          <div className="glass p-5 rounded-3xl mb-6">
+          <div className="glass p-5 rounded-3xl mb-6 mt-8">
             <h3 className="text-lg font-bold mb-4">Nuovo Obiettivo</h3>
             <input type="text" placeholder="Cosa desideri?" value={name} onChange={e => setName(e.target.value)} className="w-full glass-input mb-3" />
             <div className="flex gap-2">
                <input type="number" placeholder="Costo" value={cost} onChange={e => setCost(e.target.value)} className="glass-input w-24" />
-               <label className="flex-1 glass rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer h-12">
-                 <ImageIcon size={18} />
-                 <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-               </label>
-               <button onClick={() => { setRewards([...rewards, {id: Date.now(), name, cost: Number(cost), image}]); setName(""); setCost(""); setImage(null); }} className="bg-white text-black px-6 rounded-2xl font-bold">+</button>
+               <button onClick={() => { if(name && cost) { setRewards([...rewards, {id: Date.now(), name, cost: Number(cost), image}]); setName(""); setCost(""); setImage(null); }}} className="bg-white text-black px-6 rounded-2xl font-bold flex-1">+</button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {rewards.map(r => (
               <div key={r.id} className="glass p-3 rounded-[2rem]">
-                <div className="aspect-square glass rounded-2xl mb-2 overflow-hidden relative">
-                   {r.image && <img src={r.image} className="w-full h-full object-cover" />}
-                   <button onClick={() => setPinnedRewardId(String(r.id))} className="absolute top-2 left-2 p-1.5 glass rounded-lg"><Pin size={10} /></button>
-                </div>
                 <p className="text-[10px] font-bold truncate">{r.name}</p>
                 <p className="text-amber-500 text-[9px] font-bold">{r.cost} CR</p>
               </div>
@@ -374,7 +325,7 @@ const App = () => {
         </div>
       )}
 
-      {/* BOTTOM NAV */}
+      {/* --- BARRA DI NAVIGAZIONE (DOVE TROVI CAL) --- */}
       <nav className="fixed bottom-0 left-0 right-0 h-20 glass border-t border-white/5 flex justify-around items-center max-w-md mx-auto z-50">
         <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center ${activeTab === 'home' ? 'text-white' : 'text-zinc-600'}`}>
           <Home size={20} /><span className="text-[9px] mt-1 font-bold">DASH</span>
