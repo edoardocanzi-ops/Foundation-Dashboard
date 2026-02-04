@@ -12,7 +12,8 @@ import {
   Pin,
   Clock,
   Camera,
-  Home
+  Home,
+  Image as ImageIcon
 } from 'lucide-react';
 
 const FIXED_SUBJECTS = [
@@ -95,6 +96,17 @@ const App = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const ProgressChart = ({ value }) => {
     const radius = 35;
     const circumference = 2 * Math.PI * radius;
@@ -139,7 +151,7 @@ const App = () => {
               <h1 className="text-3xl font-bold tracking-tight">Foundation</h1>
               <p className="text-amber-500 font-semibold text-sm">No pain, no gain</p>
             </div>
-            <div className="w-14 h-14 glass rounded-2xl flex items-center justify-center">
+            <div className="w-14 h-14 glass rounded-2xl flex items-center justify-center overflow-hidden">
                <img src="https://api.dicebear.com/7.x/shapes/svg?seed=F" alt="Logo" className="w-10 h-10 white-logo opacity-80" />
             </div>
           </header>
@@ -151,12 +163,16 @@ const App = () => {
             <div className="glass rounded-[2rem] flex-1 p-5 flex flex-col justify-center relative overflow-hidden">
               {pinnedItem ? (
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-2">
-                    <Gift size={20} className="text-amber-500" />
+                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-2 overflow-hidden border border-white/10">
+                    {pinnedItem.image ? (
+                      <img src={pinnedItem.image} className="w-full h-full object-cover" alt="pinned" />
+                    ) : (
+                      <Gift size={20} className="text-amber-500" />
+                    )}
                   </div>
                   <p className="text-[10px] uppercase text-zinc-500 truncate w-full text-center">{pinnedItem.name}</p>
                   <div className="w-full bg-white/5 h-1 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-amber-500 h-full" style={{ width: `${Math.min(100, (credits / pinnedItem.cost) * 100)}%` }}></div>
+                    <div className="bg-amber-500 h-full transition-all duration-700" style={{ width: `${Math.min(100, (credits / pinnedItem.cost) * 100)}%` }}></div>
                   </div>
                 </div>
               ) : (
@@ -258,15 +274,19 @@ const App = () => {
             <input type="text" placeholder="Nome premio..." value={name} onChange={e => setName(e.target.value)} className="w-full glass-input" />
             <div className="flex gap-2">
               <input type="number" placeholder="Costo" value={cost} onChange={e => setCost(e.target.value)} className="w-24 glass-input" />
+              <label className="flex-1 glass border border-white/10 rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer text-sm hover:text-white transition-colors h-12">
+                <ImageIcon size={18} className="mr-2"/> {image ? "Foto OK" : "Carica"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </label>
               <button 
                 onClick={() => {
                   if(!name || !cost) return;
                   setRewards([...rewards, { id: Date.now(), name, cost: Number(cost), image }]);
                   setName(''); setCost(''); setImage(null);
                 }} 
-                className="flex-1 bg-white text-black rounded-2xl font-bold active:scale-95 transition-transform"
+                className="bg-white text-black px-6 rounded-2xl font-bold active:scale-95 transition-transform"
               >
-                Crea Premio
+                +
               </button>
             </div>
           </div>
@@ -275,7 +295,11 @@ const App = () => {
             {rewards.map(reward => (
               <div key={reward.id} className="glass p-3 rounded-[2rem] flex flex-col gap-3 group">
                 <div className="aspect-square rounded-2xl bg-zinc-900/50 flex items-center justify-center relative border border-white/5 overflow-hidden">
-                  <Gift size={32} className="text-zinc-800" />
+                  {reward.image ? (
+                    <img src={reward.image} className="w-full h-full object-cover" alt={reward.name} />
+                  ) : (
+                    <Gift size={32} className="text-zinc-800" />
+                  )}
                   <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-amber-500 text-[10px] font-bold">
                     {reward.cost} CR
                   </div>
@@ -283,7 +307,7 @@ const App = () => {
                     onClick={() => setPinnedRewardId(pinnedRewardId === String(reward.id) ? null : String(reward.id))}
                     className={`absolute top-2 left-2 p-1.5 rounded-lg backdrop-blur-md transition-colors ${pinnedRewardId === String(reward.id) ? 'bg-amber-500 text-black' : 'bg-black/60 text-zinc-600'}`}
                   >
-                    <Pin size={12} />
+                    <Pin size={12} fill={pinnedRewardId === String(reward.id) ? "currentColor" : "none"} />
                   </button>
                 </div>
                 <div className="flex justify-between items-center px-1">
