@@ -1,17 +1,24 @@
 {
   "short_name": "Foundation",
   "name": "Foundation Reward Dashboard",
+  "description": "La tua dashboard personale per i premi e lo studio",
   "icons": [
     {
-      "src": "[https://cdn-icons-png.flaticon.com/512/7001/7001402.png](https://cdn-icons-png.flaticon.com/512/7001/7001402.png)",
+      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/luxury-ball.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/luxury-ball.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "background_color": "#000000",
+  "start_url": ".",
   "display": "standalone",
-  "scope": "/",
-  "theme_color": "#000000"
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/"
 }
