@@ -5,19 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foundation Dashboard</title>
     
-    <!-- React & Tailwind CSS tramite CDN per funzionare senza Node.js/Build -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Script di base per lo stile grafico (Tailwind CSS) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: { 500: '#10b981' },
+                        amber: { 500: '#f59e0b' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Motore React -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         
+        /* Stili di emergenza per evitare lo schermo bianco/brutto */
         body {
-            background-color: #000000;
-            color: #ffffff; /* Testo bianco */
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             margin: 0;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
@@ -37,25 +52,21 @@
             outline: none;
         }
 
-        .fade-in {
-            animation: fadeIn 0.4s ease-out;
-        }
-
+        .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body>
+<body class="bg-black text-white antialiased">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- ICONE INTEGRATE (100% Affidabili) ---
+        // --- ICONE INTEGRATE ---
         const Icons = {
             Home: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
             GraduationCap: () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>,
@@ -133,13 +144,12 @@
                 setRewards(rewards.map(r => ({ ...r, pinned: r.id === id ? !r.pinned : false })));
             };
 
-            // Genera opzioni voti 2-10 step 0.25
             const gradeOptions = [];
             for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
 
             const pinnedReward = rewards.find(r => r.pinned);
 
-            // --- COMPONENTE GRAFICO A TORTA ---
+            // --- GRAFICO A TORTA PRINCIPALE ---
             const AveragePieChart = ({ value }) => {
                 const radius = 40;
                 const circumference = 2 * Math.PI * radius;
@@ -150,11 +160,7 @@
                     <div className="relative flex items-center justify-center w-28 h-28">
                         <svg className="w-full h-full transform -rotate-90">
                             <circle cx="56" cy="56" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
-                            <circle 
-                                cx="56" cy="56" r={radius} stroke={color} strokeWidth="8" fill="transparent" 
-                                strokeDasharray={circumference} strokeDashoffset={circumference - progress} 
-                                strokeLinecap="round" className="transition-all duration-1000 ease-out"
-                            />
+                            <circle cx="56" cy="56" r={radius} stroke={color} strokeWidth="8" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center flex-col">
                             <span className="text-2xl font-bold leading-none">{value > 0 ? value : '-'}</span>
@@ -164,7 +170,7 @@
                 );
             };
 
-            // --- COMPONENTE GRAFICO PICCOLO MATERIE ---
+            // --- GRAFICO MATERIE ---
             const SmallProgressChart = ({ value }) => {
                 const radius = 22;
                 const circumference = 2 * Math.PI * radius;
@@ -175,11 +181,7 @@
                     <div className="relative flex items-center justify-center mb-2">
                         <svg width="52" height="52" className="transform -rotate-90">
                             <circle cx="26" cy="26" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
-                            <circle 
-                                cx="26" cy="26" r={radius} stroke={color} strokeWidth="4" fill="transparent" 
-                                strokeDasharray={circumference} strokeDashoffset={circumference - progress} 
-                                strokeLinecap="round" className="transition-all duration-500 ease-out"
-                            />
+                            <circle cx="26" cy="26" r={radius} stroke={color} strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" className="transition-all duration-500 ease-out" />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-xs font-bold" style={{ color: value > 0 ? color : '#52525b' }}>{value > 0 ? value : '-'}</span>
@@ -189,7 +191,7 @@
             };
 
             return (
-                <div className="min-h-screen pb-28 max-w-md mx-auto px-6">
+                <div className="min-h-screen pb-28 max-w-md mx-auto px-6 bg-black text-white">
                     {/* HEADER */}
                     <header className="pt-10 mb-8 fade-in">
                         <h1 className="text-4xl font-extrabold tracking-tight">Foundation</h1>
@@ -197,10 +199,9 @@
                     </header>
 
                     <main className="fade-in">
-                        {/* --- TAB: HOME / DASHBOARD --- */}
+                        {/* TAB: DASHBOARD */}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-6">
-                                {/* Widget Crediti e Media */}
                                 <div className="glass-panel p-6 rounded-[2rem]">
                                     <div className="flex justify-between items-center mb-6">
                                         <div>
@@ -219,7 +220,6 @@
                                     </div>
                                 </div>
 
-                                {/* Widget Obiettivo */}
                                 <div className="glass-panel p-6 rounded-[2rem]">
                                     <p className="text-zinc-400 text-[10px] uppercase tracking-widest mb-4 font-bold flex items-center gap-2">
                                         <Icons.Pin filled={true} /> Obiettivo In Corso
@@ -249,7 +249,7 @@
                             </div>
                         )}
 
-                        {/* --- TAB: MATERIE E VOTI --- */}
+                        {/* TAB: MATERIE E VOTI */}
                         {activeTab === 'subjects' && (
                             <div className="fade-in">
                                 {!selectedSubjectId ? (
@@ -294,8 +294,9 @@
                             </div>
                         )}
 
-                        {/* --- TAB: SHOP --- */}
+                        {/* TAB: SHOP */}
                         {activeTab === 'shop' && (
                             <div className="space-y-6 fade-in">
                                 <h2 className="text-3xl font-bold">Ricompense</h2>
-   
+                                
+                                <div className="glass                                    
