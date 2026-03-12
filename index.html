@@ -1,0 +1,30 @@
+!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Ottimizzato per Pixel 9 Pro e schermi mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Foundation Dashboard</title>
+    <!-- Tailwind caricato in modo sicuro per React -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #000;
+        color: #fff;
+        margin: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      /* Stile per l'effetto vetro */
+      .glass-panel {
+        background: rgba(30, 30, 30, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
