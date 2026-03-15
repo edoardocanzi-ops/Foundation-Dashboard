@@ -11,18 +11,18 @@
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "https://1773582849821.png",
+      "src": "/1773582849821.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://1773582849821.png",
+      "src": "/1773582849821.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "https://1773582849821.png",
+      "src": "/1773582849821.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
