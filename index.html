@@ -9,9 +9,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Foundation</title>
     
-    <!-- Forziamo l'icona dell'app anche come favicon per togliere la "V" di Vercel -->
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/7001/7001402.png" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/7001/7001402.png" />
+    <!-- I link puntano ora alla tua immagine personalizzata -->
+    <link rel="icon" type="image/png" href="/1773582849821.png" />
+    <link rel="apple-touch-icon" href="/1773582849821.png" />
     <link rel="manifest" href="/manifest.json" />
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,10 +27,17 @@
       }
       /* Preveniamo lo scroll della pagina mentre si usano i bottoni */
       #root { height: 100vh; overflow: hidden; }
+      .glass-panel {
+        background: rgba(25, 25, 25, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
     </style>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Assicurati che questo corrisponda al nome esatto della tua cartella src/SRC -->
     <script type="module" src="/src/main.jsx"></script>
     
     <script>
@@ -45,4 +52,3 @@
     </script>
   </body>
 </html>
-
