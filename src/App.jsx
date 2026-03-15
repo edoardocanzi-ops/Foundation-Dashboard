@@ -25,24 +25,22 @@ const FIXED_SUBJECTS = [
 ];
 
 const TASK_LEVELS = {
-  1: { credits: 0.5, color: '#065f46', name: 'Lv 1', limit: Infinity }, // Dark Green
-  2: { credits: 1.0, color: '#4ade80', name: 'Lv 2', limit: 6 },        // Light Green
-  3: { credits: 1.5, color: '#facc15', name: 'Lv 3', limit: 4 },        // Yellow
-  4: { credits: 2.0, color: '#f97316', name: 'Lv 4', limit: 2 },        // Orange
-  5: { credits: 2.5, color: '#ef4444', name: 'Lv 5', limit: 1 }         // Red
+  1: { credits: 0.5, color: '#065f46', name: 'Lv 1', limit: Infinity },
+  2: { credits: 1.0, color: '#4ade80', name: 'Lv 2', limit: 6 },
+  3: { credits: 1.5, color: '#facc15', name: 'Lv 3', limit: 4 },
+  4: { credits: 2.0, color: '#f97316', name: 'Lv 4', limit: 2 },
+  5: { credits: 2.5, color: '#ef4444', name: 'Lv 5', limit: 1 }
 };
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   
-  // Storage States
   const [credits, setCredits] = useState(() => Number(localStorage.getItem('f_credits')) || 0);
   const [grades, setGrades] = useState(() => JSON.parse(localStorage.getItem('f_grades')) || []);
   const [rewards, setRewards] = useState(() => JSON.parse(localStorage.getItem('f_rewards')) || []);
   const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('f_tasks')) || []);
   
-  // Forms States
   const [newGradeValue, setNewGradeValue] = useState("8.00");
   const [rewardName, setRewardName] = useState("");
   const [rewardCost, setRewardCost] = useState("");
@@ -52,7 +50,6 @@ const App = () => {
   const [taskLevel, setTaskLevel] = useState(1);
   const [taskImage, setTaskImage] = useState(null);
 
-  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('f_credits', credits);
     localStorage.setItem('f_grades', JSON.stringify(grades));
@@ -60,13 +57,12 @@ const App = () => {
     localStorage.setItem('f_tasks', JSON.stringify(tasks));
   }, [credits, grades, rewards, tasks]);
 
-  // --- LOGIC: GRADES ---
   const getColorForGrade = (val) => {
     const v = parseFloat(val);
-    if (v >= 8) return "#059669"; // Dark Green
-    if (v >= 6) return "#4ade80"; // Light Green
-    if (v > 0) return "#ef4444";  // Red
-    return "#3f3f46";             // Gray
+    if (v >= 8) return "#059669";
+    if (v >= 6) return "#4ade80";
+    if (v > 0) return "#ef4444";
+    return "#3f3f46";
   };
 
   const calculateAverage = (id) => {
@@ -87,14 +83,12 @@ const App = () => {
   const gradeOptions = [];
   for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
 
-  // --- LOGIC: REWARDS ---
   const togglePin = (id) => {
     setRewards(rewards.map(r => ({ ...r, pinned: r.id === id ? !r.pinned : false })));
   };
   const pinnedReward = rewards.find(r => r.pinned);
 
-  // --- LOGIC: TASKS ---
-  const currentMonth = new Date().toISOString().slice(0, 7); // Returns "YYYY-MM"
+  const currentMonth = new Date().toISOString().slice(0, 7);
   
   const getTaskCountForMonth = (level) => {
     return tasks.filter(t => t.level === level && t.month === currentMonth).length;
@@ -127,7 +121,6 @@ const App = () => {
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: true } : t));
   };
 
-  // --- GENERIC IMAGE UPLOAD ---
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (file) {
@@ -137,7 +130,6 @@ const App = () => {
     }
   };
 
-  // --- CHARTS ---
   const AveragePieChart = ({ value }) => {
     const radius = 38;
     const circumference = 2 * Math.PI * radius;
@@ -177,7 +169,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen pb-28 max-w-md mx-auto px-6 pt-10 text-white selection:bg-white selection:text-black">
-      {/* HEADER */}
       <header className="mb-10 fade-in flex justify-between items-start">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white uppercase italic">Foundation</h1>
@@ -186,7 +177,6 @@ const App = () => {
       </header>
 
       <main className="space-y-6">
-        {/* --- DASHBOARD TAB --- */}
         {activeTab === 'dashboard' && (
           <>
             <div className="glass-panel p-6 rounded-[2.5rem]">
@@ -235,7 +225,6 @@ const App = () => {
           </>
         )}
 
-        {/* --- SUBJECTS TAB --- */}
         {activeTab === 'subjects' && (
           <div className="animate-in fade-in duration-300">
             {!selectedSubjectId ? (
@@ -278,7 +267,6 @@ const App = () => {
           </div>
         )}
 
-        {/* --- TASKS TAB --- */}
         {activeTab === 'tasks' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-end">
@@ -309,7 +297,7 @@ const App = () => {
                         onClick={() => isAvailable && setTaskLevel(lvl)}
                         disabled={!isAvailable}
                         className={`flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all ${!isAvailable ? 'opacity-30 cursor-not-allowed border-transparent' : isSelected ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                        style={{ backgroundColor: info.color + '40' }} // 40 is hex for 25% opacity background
+                        style={{ backgroundColor: info.color + '40' }}
                       >
                         <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: info.color }}></div>
                         <span className="text-[10px] font-black">{info.credits}</span>
@@ -318,7 +306,6 @@ const App = () => {
                   })}
                 </div>
                 
-                {/* Visual Tracker of Monthly Limits */}
                 <div className="mt-3 flex justify-between px-1">
                   {[1, 2, 3, 4, 5].map(lvl => {
                     const count = getTaskCountForMonth(lvl);
@@ -337,7 +324,6 @@ const App = () => {
               </button>
             </div>
 
-            {/* List of Tasks */}
             <div className="space-y-4">
               {tasks.map(t => {
                 const info = TASK_LEVELS[t.level];
@@ -374,11 +360,17 @@ const App = () => {
           </div>
         )}
 
-        {/* --- SHOP TAB --- */}
         {activeTab === 'shop' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className="text-3xl font-bold text-white">Shop</h2>
             <div className="glass-panel p-6 rounded-3xl space-y-4">
               <input type="text" placeholder="Nuovo obiettivo..." value={rewardName} onChange={e => setRewardName(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl font-medium text-white outline-none focus:border-white transition-colors placeholder:text-zinc-700" />
               <div className="flex gap-2">
-                <input type="number" placeholder="CR" value={rewardCost} onChange={e => setRewardCost(e.target.value)} className="w-24 bg-black border border-white/10 p-4 roun
+                <input type="number" placeholder="CR" value={rewardCost} onChange={e => setRewardCost(e.target.value)} className="w-24 bg-black border border-white/10 p-4 rounded-xl text-center font-bold text-white outline-none placeholder:text-zinc-700" />
+                <label className="flex-1 glass-panel rounded-xl flex items-center justify-center cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
+                  <Camera size={16} className="mr-2"/> {rewardImage ? "FOTO OK" : "CARICA"}
+                  <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, setRewardImage)} accept="image/*" />
+                </label>
+                <button onClick={() => {
+                  if(!rewardName || !rewardCost) return;
+                
