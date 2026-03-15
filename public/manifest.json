@@ -11,18 +11,18 @@
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/7001/7001402.png",
+      "src": "https://1773582849821.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/7001/7001402.png",
+      "src": "https://1773582849821.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/7001/7001402.png",
+      "src": "https://1773582849821.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
