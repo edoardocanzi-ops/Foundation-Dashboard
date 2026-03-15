@@ -266,8 +266,7 @@ const App = () => {
             )}
           </div>
         )}
-
-        {activeTab === 'tasks' && (
+                                                                                                                                         {activeTab === 'tasks' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-end">
               <h2 className="text-3xl font-bold text-white">Tasks</h2>
@@ -373,4 +372,51 @@ const App = () => {
                 </label>
                 <button onClick={() => {
                   if(!rewardName || !rewardCost) return;
-                
+                  setRewards([...rewards, { id: Date.now(), name: rewardName, cost: Number(rewardCost), image: rewardImage, pinned: false }]);
+                  setRewardName(""); setRewardCost(""); setRewardImage(null);
+                }} className="bg-white text-black px-5 rounded-xl font-bold active:scale-95 transition-transform"><Plus size={20} /></button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {rewards.map(r => (
+                <div key={r.id} className="glass-panel p-4 rounded-[2.2rem] relative flex flex-col group">
+                  <button onClick={() => togglePin(r.id)} className={`absolute top-5 left-5 z-10 p-2 rounded-full backdrop-blur-md transition-all ${r.pinned ? 'bg-white text-black' : 'bg-black/60 text-zinc-500 hover:text-white'}`}>
+                    <Pin size={12} fill={r.pinned ? "currentColor" : "none"} />
+                  </button>
+                  <button onClick={() => setRewards(rewards.filter(x => x.id !== r.id))} className="absolute top-5 right-5 z-10 p-2 text-zinc-800 hover:text-red-500"><Trash2 size={12} /></button>
+                  <div className="aspect-square rounded-2xl bg-black border border-white/5 flex items-center justify-center overflow-hidden mb-4 shadow-xl">
+                    {r.image ? <img src={r.image} className="w-full h-full object-cover" /> : <Gift size={32} className="text-zinc-900" />}
+                  </div>
+                  <div className="px-1">
+                    <p className="text-xs font-bold truncate text-white mb-2">{r.name}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-black text-xs italic">{r.cost} CR</span>
+                      <button onClick={() => credits >= r.cost && setCredits(c => c - r.cost)} disabled={credits < r.cost} className={`text-[9px] font-bold uppercase tracking-tighter px-3 py-2 rounded-full transition-all ${credits >= r.cost ? 'bg-emerald-500 text-black active:scale-90 shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-zinc-800 cursor-not-allowed'}`}>Riscatta</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+
+      <nav className="fixed bottom-6 left-6 right-6 h-20 glass-panel rounded-[2.5rem] flex justify-between items-center px-6 max-w-md mx-auto z-50 shadow-2xl">
+        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'dashboard' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <BookOpen size={22} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => {setActiveTab('subjects'); setSelectedSubjectId(null);}} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'subjects' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <GraduationCap size={22} strokeWidth={activeTab === 'subjects' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'tasks' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <CheckSquare size={22} strokeWidth={activeTab === 'tasks' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'shop' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <ShoppingBag size={22} strokeWidth={activeTab === 'shop' ? 2.5 : 2} />
+        </button>
+      </nav>
+    </div>
+  );
+};
+
+export default App;
