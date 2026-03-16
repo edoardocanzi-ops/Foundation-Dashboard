@@ -6,7 +6,8 @@ import {
   Plus, 
   Minus,
   Trash2, 
-  ChevronLeft, 
+  ChevronLeft,
+  ChevronRight,
   Pin,
   Clock,
   Camera,
@@ -24,23 +25,26 @@ const FIXED_SUBJECTS = [
   { id: 'fis', name: 'Ed. Fisica' }, { id: 'sci', name: 'Scienze Naturali' }
 ];
 
+// Configurazione dei Livelli Task
 const TASK_LEVELS = {
-  1: { credits: 0.5, color: '#065f46', name: 'Lv 1', limit: Infinity },
-  2: { credits: 1.0, color: '#4ade80', name: 'Lv 2', limit: 6 },
-  3: { credits: 1.5, color: '#facc15', name: 'Lv 3', limit: 4 },
-  4: { credits: 2.0, color: '#f97316', name: 'Lv 4', limit: 2 },
-  5: { credits: 2.5, color: '#ef4444', name: 'Lv 5', limit: 1 }
+  1: { credits: 0.5, color: '#065f46', name: 'Livello 1', limit: Infinity },
+  2: { credits: 1.0, color: '#4ade80', name: 'Livello 2', limit: 6 },
+  3: { credits: 1.5, color: '#facc15', name: 'Livello 3', limit: 4 },
+  4: { credits: 2.0, color: '#f97316', name: 'Livello 4', limit: 2 },
+  5: { credits: 2.5, color: '#ef4444', name: 'Livello 5', limit: 1 }
 };
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   
+  // Storage
   const [credits, setCredits] = useState(() => Number(localStorage.getItem('f_credits')) || 0);
   const [grades, setGrades] = useState(() => JSON.parse(localStorage.getItem('f_grades')) || []);
   const [rewards, setRewards] = useState(() => JSON.parse(localStorage.getItem('f_rewards')) || []);
   const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('f_tasks')) || []);
   
+  // Form States
   const [newGradeValue, setNewGradeValue] = useState("8.00");
   const [rewardName, setRewardName] = useState("");
   const [rewardCost, setRewardCost] = useState("");
@@ -50,6 +54,7 @@ const App = () => {
   const [taskLevel, setTaskLevel] = useState(1);
   const [taskImage, setTaskImage] = useState(null);
 
+  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('f_credits', credits);
     localStorage.setItem('f_grades', JSON.stringify(grades));
@@ -57,6 +62,7 @@ const App = () => {
     localStorage.setItem('f_tasks', JSON.stringify(tasks));
   }, [credits, grades, rewards, tasks]);
 
+  // --- LOGICA VOTI E MEDIE ---
   const getColorForGrade = (val) => {
     const v = parseFloat(val);
     if (v >= 8) return "#059669";
@@ -83,11 +89,13 @@ const App = () => {
   const gradeOptions = [];
   for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
 
+  // --- LOGICA REWARDS ---
   const togglePin = (id) => {
     setRewards(rewards.map(r => ({ ...r, pinned: r.id === id ? !r.pinned : false })));
   };
   const pinnedReward = rewards.find(r => r.pinned);
 
+  // --- LOGICA TASKS ---
   const currentMonth = new Date().toISOString().slice(0, 7);
   
   const getTaskCountForMonth = (level) => {
@@ -121,6 +129,7 @@ const App = () => {
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: true } : t));
   };
 
+  // --- UPLOAD IMMAGINI ---
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (file) {
@@ -130,6 +139,7 @@ const App = () => {
     }
   };
 
+  // --- COMPONENTI GRAFICI ---
   const AveragePieChart = ({ value }) => {
     const radius = 38;
     const circumference = 2 * Math.PI * radius;
@@ -149,24 +159,6 @@ const App = () => {
     );
   };
 
-  const SmallProgressChart = ({ value }) => {
-    const radius = 22;
-    const circumference = 2 * Math.PI * radius;
-    const progress = (parseFloat(value) / 10) * circumference;
-    const color = getColorForGrade(value);
-    return (
-      <div className="relative flex items-center justify-center mb-2">
-        <svg width="52" height="52" className="transform -rotate-90">
-          <circle cx="26" cy="26" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
-          <circle cx="26" cy="26" r={radius} stroke={color} strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold" style={{ color: value > 0 ? color : '#52525b' }}>{value > 0 ? value : '-'}</span>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen pb-28 max-w-md mx-auto px-6 pt-10 text-white selection:bg-white selection:text-black">
       <header className="mb-10 fade-in flex justify-between items-start">
@@ -177,9 +169,11 @@ const App = () => {
       </header>
 
       <main className="space-y-6">
+        
+        {/* --- TAB: DASHBOARD --- */}
         {activeTab === 'dashboard' && (
           <>
-            <div className="glass-panel p-6 rounded-[2.5rem]">
+            <div className="glass-panel p-6 rounded-[2.5rem] fade-in">
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1 font-bold">Crediti Totali</p>
@@ -197,7 +191,7 @@ const App = () => {
               </div>
             </div>
 
-            <div className="glass-panel p-6 rounded-[2.5rem]">
+            <div className="glass-panel p-6 rounded-[2.5rem] fade-in">
               <p className="text-zinc-500 text-[10px] uppercase tracking-widest mb-5 font-bold flex items-center gap-2 text-white/50">
                 <Pin size={12} fill="currentColor" /> Obiettivo Attuale
               </p>
@@ -225,20 +219,47 @@ const App = () => {
           </>
         )}
 
+        {/* --- TAB: MATERIE --- */}
         {activeTab === 'subjects' && (
           <div className="animate-in fade-in duration-300">
             {!selectedSubjectId ? (
-              <div className="grid grid-cols-2 gap-4">
-                {FIXED_SUBJECTS.map(s => {
-                  const avg = calculateAverage(s.id);
-                  const color = getColorForGrade(avg);
-                  return (
-                    <button key={s.id} onClick={() => setSelectedSubjectId(s.id)} className="glass-panel p-5 rounded-[2.2rem] flex flex-col items-center justify-center active:scale-95 transition-all group">
-                      <SmallProgressChart value={avg} />
-                      <p className="text-white text-[10px] uppercase font-bold text-center tracking-tight leading-tight group-hover:opacity-70 transition-opacity">{s.name}</p>
-                    </button>
-                  );
-                })}
+              <div className="space-y-4">
+                <div className="flex justify-between items-end mb-2">
+                  <h2 className="text-3xl font-bold text-white">Materie</h2>
+                  <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Ordinate per media</span>
+                </div>
+                
+                {/* Lista verticale ordinata */}
+                <div className="space-y-3">
+                  {FIXED_SUBJECTS.map(s => {
+                    const avgStr = calculateAverage(s.id);
+                    const avgNum = parseFloat(avgStr);
+                    return { ...s, avgStr, avgNum };
+                  })
+                  .sort((a, b) => b.avgNum - a.avgNum) // Ordinamento decrescente
+                  .map(s => {
+                    const color = getColorForGrade(s.avgStr);
+                    return (
+                      <button 
+                        key={s.id} 
+                        onClick={() => setSelectedSubjectId(s.id)} 
+                        className="glass-panel p-4 rounded-[2rem] flex items-center justify-between w-full active:scale-95 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="relative flex items-center justify-center flex-shrink-0">
+                             <svg width="48" height="48" className="transform -rotate-90">
+                               <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
+                               <circle cx="24" cy="24" r="20" stroke={s.avgNum > 0 ? color : '#27272a'} strokeWidth="4" fill="transparent" strokeDasharray={125.6} strokeDashoffset={125.6 - (s.avgNum/10 * 125.6)} strokeLinecap="round" />
+                             </svg>
+                             <span className="absolute text-xs font-bold" style={{ color: s.avgNum > 0 ? color : '#ffffff' }}>{s.avgNum > 0 ? s.avgStr : '-'}</span>
+                          </div>
+                          <p className="text-white text-sm font-bold text-left tracking-tight group-hover:opacity-70 transition-opacity">{s.name}</p>
+                        </div>
+                        <ChevronRight size={20} className="text-zinc-600 group-hover:text-white transition-colors" />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
@@ -266,7 +287,8 @@ const App = () => {
             )}
           </div>
         )}
-                                                                                                                                         {activeTab === 'tasks' && (
+                                                                                               {/* --- TAB: TASKS --- */}
+        {activeTab === 'tasks' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-end">
               <h2 className="text-3xl font-bold text-white">Tasks</h2>
@@ -299,18 +321,20 @@ const App = () => {
                         style={{ backgroundColor: info.color + '40' }}
                       >
                         <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: info.color }}></div>
-                        <span className="text-[10px] font-black">{info.credits}</span>
+                        <span className="text-[10px] font-black" style={{ color: isSelected ? '#fff' : info.color }}>{info.credits}</span>
                       </button>
                     )
                   })}
                 </div>
                 
+                {/* Tracker Limiti Mensili */}
                 <div className="mt-3 flex justify-between px-1">
                   {[1, 2, 3, 4, 5].map(lvl => {
                     const count = getTaskCountForMonth(lvl);
                     const limit = TASK_LEVELS[lvl].limit;
+                    const isMaxed = count >= limit;
                     return (
-                      <span key={lvl} className="text-[8px] font-bold text-zinc-500">
+                      <span key={lvl} className={`text-[8px] font-bold ${isMaxed ? 'text-red-500' : 'text-zinc-500'}`}>
                         {limit === Infinity ? '∞' : `${count}/${limit}`}
                       </span>
                     )
@@ -323,6 +347,7 @@ const App = () => {
               </button>
             </div>
 
+            {/* Lista dei Tasks */}
             <div className="space-y-4">
               {tasks.map(t => {
                 const info = TASK_LEVELS[t.level];
@@ -331,7 +356,7 @@ const App = () => {
                     <div className="w-16 h-16 rounded-2xl overflow-hidden bg-black flex items-center justify-center border-2 flex-shrink-0" style={{ borderColor: info.color }}>
                       {t.image ? <img src={t.image} className="w-full h-full object-cover" /> : <CheckSquare size={20} style={{ color: info.color }} />}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       <div className="flex justify-between items-start">
                         <p className={`text-sm font-bold truncate ${t.completed ? 'line-through text-zinc-500' : 'text-white'}`}>{t.name}</p>
                         <button onClick={() => setTasks(tasks.filter(x => x.id !== t.id))} className="text-zinc-700 hover:text-red-500"><Trash2 size={14} /></button>
@@ -359,6 +384,7 @@ const App = () => {
           </div>
         )}
 
+        {/* --- TAB: SHOP --- */}
         {activeTab === 'shop' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <h2 className="text-3xl font-bold text-white">Shop</h2>
@@ -401,6 +427,7 @@ const App = () => {
         )}
       </main>
 
+      {/* NAV BAR INFERIORE */}
       <nav className="fixed bottom-6 left-6 right-6 h-20 glass-panel rounded-[2.5rem] flex justify-between items-center px-6 max-w-md mx-auto z-50 shadow-2xl">
         <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'dashboard' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
            <BookOpen size={22} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
