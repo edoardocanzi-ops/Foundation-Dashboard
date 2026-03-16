@@ -9,7 +9,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Foundation</title>
     
-    <!-- I link puntano ora alla tua immagine personalizzata -->
     <link rel="icon" type="image/png" href="/1773582849821.png" />
     <link rel="apple-touch-icon" href="/1773582849821.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -24,9 +23,9 @@
         padding: 0;
         font-family: 'Plus Jakarta Sans', sans-serif;
         -webkit-tap-highlight-color: transparent;
+        /* Questa riga blocca il "rimbalzo" elastico di Android, ma lascia scorrere la pagina! */
+        overscroll-behavior-y: none; 
       }
-      /* Preveniamo lo scroll della pagina mentre si usano i bottoni */
-      #root { height: 100vh; overflow: hidden; }
       .glass-panel {
         background: rgba(25, 25, 25, 0.4);
         backdrop-filter: blur(20px);
@@ -37,11 +36,9 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Assicurati che questo corrisponda al nome esatto della tua cartella src/SRC -->
     <script type="module" src="/src/main.jsx"></script>
     
     <script>
-      // Registrazione forzata del Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
@@ -52,3 +49,5 @@
     </script>
   </body>
 </html>
+
+
