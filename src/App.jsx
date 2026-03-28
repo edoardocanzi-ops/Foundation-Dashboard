@@ -77,108 +77,8 @@ const App = () => {
     setNewGradeDate(today);
   };
 
-  const gradeOptions = [];
-  for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
-
-  const togglePin = (id) => {
-    setRewards(rewards.map(r => ({ ...r, pinned: r.id === id ? !r.pinned : false })));
-  };
-  const pinnedReward = rewards.find(r => r.pinned);
-
-  const currentMonth = today.slice(0, 7);
-  
-  const getTaskCountForMonth = (level) => {
-    return tasks.filter(t => t.level === level && t.month === currentMonth).length;
-  };
-
-  const canAddTask = (level) => {
-    return getTaskCountForMonth(level) < TASK_LEVELS[level].limit;
-  };
-
-  const addTask = () => {
-    if (!taskName || !canAddTask(taskLevel)) return;
-    const newTask = {
-      id: Date.now(), name: taskName, level: taskLevel, image: taskImage, completed: false, month: currentMonth
-    };
-    setTasks([newTask, ...tasks]);
-    setTaskName(""); setTaskImage(null); setTaskLevel(1);
-  };
-
-  const completeTask = (id) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task || task.completed) return;
-    setCredits(c => c + TASK_LEVELS[task.level].credits);
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: true } : t));
-  };
-
-  const handleImageUpload = (e, setter) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setter(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const AveragePieChart = ({ value }) => {
-    const radius = 38;
-    const circumference = 2 * Math.PI * radius;
-    const progress = (parseFloat(value) / 10) * circumference;
-    const color = getColorForGrade(value);
-    return (
-      <div className="relative flex items-center justify-center w-24 h-24">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle cx="48" cy="48" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="7" fill="transparent" />
-          <circle cx="48" cy="48" r={radius} stroke={color} strokeWidth="7" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center flex-col">
-          <span className="text-xl font-bold leading-none text-white">{value > 0 ? value : '-'}</span>
-          <span className="text-[8px] uppercase text-zinc-500 font-bold tracking-widest mt-1">Media</span>
-        </div>
-      </div>
-    );
-  };
-
-  const SmallProgressChart = ({ value }) => {
-    const radius = 22;
-    const circumference = 2 * Math.PI * radius;
-    const progress = (parseFloat(value) / 10) * circumference;
-    const color = getColorForGrade(value);
-    return (
-      <div className="relative flex items-center justify-center mb-2">
-        <svg width="52" height="52" className="transform -rotate-90">
-          <circle cx="26" cy="26" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
-          <circle cx="26" cy="26" r={radius} stroke={color} strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold" style={{ color: value > 0 ? color : '#52525b' }}>{value > 0 ? value : '-'}</span>
-        </div>
-      </div>
-    );
-  };
-    const chartData = grades
-    .map(g => {
-      const subject = FIXED_SUBJECTS.find(s => s.id === g.subjectId);
-      const dateStr = g.date || new Date(g.id).toISOString().split('T')[0];
-      return { ...g, dateStr, subjectName: subject ? subject.name : 'Voto' };
-    })
-    .sort((a, b) => new Date(a.dateStr) - new Date(b.dateStr));
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const color = getColorForGrade(data.value);
-      return (
-        <div className="bg-black border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
-          <p className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold mb-1">{label}</p>
-          <p className="text-white text-xs font-bold truncate max-w-[120px] mb-1">{data.subjectName}</p>
-          <p className="text-xl font-black" style={{ color }}>{data.value.toFixed(2)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
+  const
+/* --- INIZIO PARTE 2 --- */
   return (
     <div className="min-h-screen pb-28 max-w-md mx-auto px-6 pt-10 text-white selection:bg-white selection:text-black">
       <header className="mb-10 fade-in flex justify-between items-start">
@@ -358,161 +258,166 @@ const App = () => {
                 </div>
               </div>
             )}
-                              {activeTab === 'tasks' && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="flex justify-between items-end">
-                  <h2 className="text-3xl font-bold text-white">Tasks</h2>
-                  <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">{currentMonth}</span>
-                </div>
-                
-                <div className="glass-panel p-6 rounded-3xl space-y-5">
-                  <input type="text" placeholder="Nome del task..." value={taskName} onChange={e => setTaskName(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl font-medium text-white outline-none focus:border-white transition-colors placeholder:text-zinc-700" />
-                  
-                  <div className="flex gap-2">
-                    <label className="flex-1 glass-panel rounded-xl flex items-center justify-center cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-white transition-colors py-3">
-                      <Camera size={16} className="mr-2"/> {taskImage ? "FOTO OK" : "AGGIUNGI FOTO"}
-                      <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, setTaskImage)} accept="image/*" />
-                    </label>
-                  </div>
+/* --- FINE PARTE 2 --- */
+            /* --- INIZIO PARTE 3 --- */
+        {activeTab === 'tasks' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex justify-between items-end">
+              <h2 className="text-3xl font-bold text-white">Tasks</h2>
+              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">{currentMonth}</span>
+            </div>
+            
+            <div className="glass-panel p-6 rounded-3xl space-y-5">
+              <input type="text" placeholder="Nome del task..." value={taskName} onChange={e => setTaskName(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl font-medium text-white outline-none focus:border-white transition-colors placeholder:text-zinc-700" />
+              
+              <div className="flex gap-2">
+                <label className="flex-1 glass-panel rounded-xl flex items-center justify-center cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-white transition-colors py-3">
+                  <Camera size={16} className="mr-2"/> {taskImage ? "FOTO OK" : "AGGIUNGI FOTO"}
+                  <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, setTaskImage)} accept="image/*" />
+                </label>
+              </div>
 
-                  <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Seleziona Livello</p>
-                    <div className="flex gap-2 justify-between">
-                      {[1, 2, 3, 4, 5].map(lvl => {
-                        const info = TASK_LEVELS[lvl];
-                        const isAvailable = canAddTask(lvl);
-                        const isSelected = taskLevel === lvl;
-                        return (
-                          <button 
-                            key={lvl}
-                            onClick={() => isAvailable && setTaskLevel(lvl)}
-                            disabled={!isAvailable}
-                            className={`flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all ${!isAvailable ? 'opacity-30 cursor-not-allowed border-transparent' : isSelected ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                            style={{ backgroundColor: info.color + '40' }}
-                          >
-                            <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: info.color }}></div>
-                            <span className="text-[10px] font-black" style={{ color: isSelected ? '#fff' : info.color }}>{info.credits}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    
-                    <div className="mt-3 flex justify-between px-1">
-                      {[1, 2, 3, 4, 5].map(lvl => {
-                        const count = getTaskCountForMonth(lvl);
-                        const limit = TASK_LEVELS[lvl].limit;
-                        const isMaxed = count >= limit;
-                        return (
-                          <span key={lvl} className={`text-[8px] font-bold ${isMaxed ? 'text-red-500' : 'text-zinc-500'}`}>
-                            {limit === Infinity ? '∞' : `${count}/${limit}`}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <button onClick={addTask} disabled={!taskName || !canAddTask(taskLevel)} className="w-full bg-white text-black py-4 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
-                    <Plus size={18} /> Crea Task
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {tasks.map(t => {
-                    const info = TASK_LEVELS[t.level];
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500 mb-2">Seleziona Livello</p>
+                <div className="flex gap-2 justify-between">
+                  {[1, 2, 3, 4, 5].map(lvl => {
+                    const info = TASK_LEVELS[lvl];
+                    const isAvailable = canAddTask(lvl);
+                    const isSelected = taskLevel === lvl;
                     return (
-                      <div key={t.id} className={`glass-panel p-3 rounded-[2rem] flex items-center gap-4 transition-all ${t.completed ? 'opacity-50' : ''}`}>
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-black flex items-center justify-center border-2 flex-shrink-0" style={{ borderColor: info.color }}>
-                          {t.image ? <img src={t.image} className="w-full h-full object-cover" /> : <CheckSquare size={20} style={{ color: info.color }} />}
-                        </div>
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex justify-between items-start">
-                            <p className={`text-sm font-bold truncate ${t.completed ? 'line-through text-zinc-500' : 'text-white'}`}>{t.name}</p>
-                            <button onClick={() => setTasks(tasks.filter(x => x.id !== t.id))} className="text-zinc-700 hover:text-red-500"><Trash2 size={14} /></button>
-                          </div>
-                          <div className="flex justify-between items-center mt-2">
-                            <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: info.color }}>{info.name} • {info.credits} CR</span>
-                            {!t.completed ? (
-                              <button onClick={() => completeTask(t.id)} className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors">
-                                COMPLETA
-                              </button>
-                            ) : (
-                              <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1"><Check size={12}/> FATTO</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      <button 
+                        key={lvl}
+                        onClick={() => isAvailable && setTaskLevel(lvl)}
+                        disabled={!isAvailable}
+                        className={`flex-1 flex flex-col items-center p-2 rounded-xl border-2 transition-all ${!isAvailable ? 'opacity-30 cursor-not-allowed border-transparent' : isSelected ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                        style={{ backgroundColor: info.color + '40' }}
+                      >
+                        <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: info.color }}></div>
+                        <span className="text-[10px] font-black" style={{ color: isSelected ? '#fff' : info.color }}>{info.credits}</span>
+                      </button>
                     )
                   })}
-                  {tasks.length === 0 && (
-                    <div className="text-center py-8 text-zinc-600 text-xs font-bold uppercase tracking-widest">
-                      Nessun task creato
-                    </div>
-                  )}
+                </div>
+                
+                <div className="mt-3 flex justify-between px-1">
+                  {[1, 2, 3, 4, 5].map(lvl => {
+                    const count = getTaskCountForMonth(lvl);
+                    const limit = TASK_LEVELS[lvl].limit;
+                    const isMaxed = count >= limit;
+                    return (
+                      <span key={lvl} className={`text-[8px] font-bold ${isMaxed ? 'text-red-500' : 'text-zinc-500'}`}>
+                        {limit === Infinity ? '∞' : `${count}/${limit}`}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
-            )}
 
-            {activeTab === 'shop' && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <h2 className="text-3xl font-bold text-white">Shop</h2>
-                <div className="glass-panel p-6 rounded-3xl space-y-4">
-                  <input type="text" placeholder="Nuovo obiettivo..." value={rewardName} onChange={e => setRewardName(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl font-medium text-white outline-none focus:border-white transition-colors placeholder:text-zinc-700" />
-                  <div className="flex gap-2">
-                    <input type="number" placeholder="CR" value={rewardCost} onChange={e => setRewardCost(e.target.value)} className="w-24 bg-black border border-white/10 p-4 rounded-xl text-center font-bold text-white outline-none placeholder:text-zinc-700" />
-                    <label className="flex-1 glass-panel rounded-xl flex items-center justify-center cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
-                      <Camera size={16} className="mr-2"/> {rewardImage ? "FOTO OK" : "CARICA"}
-                      <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, setRewardImage)} accept="image/*" />
-                    </label>
-                    <button onClick={() => {
-                      if(!rewardName || !rewardCost) return;
-                      setRewards([...rewards, { id: Date.now(), name: rewardName, cost: Number(rewardCost), image: rewardImage, pinned: false }]);
-                      setRewardName(""); setRewardCost(""); setRewardImage(null);
-                    }} className="bg-white text-black px-5 rounded-xl font-bold active:scale-95 transition-transform"><Plus size={20} /></button>
+              <button onClick={addTask} disabled={!taskName || !canAddTask(taskLevel)} className="w-full bg-white text-black py-4 rounded-xl font-bold active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+                <Plus size={18} /> Crea Task
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {tasks.map(t => {
+                const info = TASK_LEVELS[t.level];
+                return (
+                  <div key={t.id} className={`glass-panel p-3 rounded-[2rem] flex items-center gap-4 transition-all ${t.completed ? 'opacity-50' : ''}`}>
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-black flex items-center justify-center border-2 flex-shrink-0" style={{ borderColor: info.color }}>
+                      {t.image ? <img src={t.image} className="w-full h-full object-cover" /> : <CheckSquare size={20} style={{ color: info.color }} />}
+                    </div>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex justify-between items-start">
+                        <p className={`text-sm font-bold truncate ${t.completed ? 'line-through text-zinc-500' : 'text-white'}`}>{t.name}</p>
+                        <button onClick={() => setTasks(tasks.filter(x => x.id !== t.id))} className="text-zinc-700 hover:text-red-500"><Trash2 size={14} /></button>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: info.color }}>{info.name} • {info.credits} CR</span>
+                        {!t.completed ? (
+                          <button onClick={() => completeTask(t.id)} className="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors">
+                            COMPLETA
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1"><Check size={12}/> FATTO</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {tasks.length === 0 && (
+                <div className="text-center py-8 text-zinc-600 text-xs font-bold uppercase tracking-widest">
+                  Nessun task creato
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'shop' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <h2 className="text-3xl font-bold text-white">Shop</h2>
+            <div className="glass-panel p-6 rounded-3xl space-y-4">
+              <input type="text" placeholder="Nuovo obiettivo..." value={rewardName} onChange={e => setRewardName(e.target.value)} className="w-full bg-black border border-white/10 p-4 rounded-xl font-medium text-white outline-none focus:border-white transition-colors placeholder:text-zinc-700" />
+              <div className="flex gap-2">
+                <input type="number" placeholder="CR" value={rewardCost} onChange={e => setRewardCost(e.target.value)} className="w-24 bg-black border border-white/10 p-4 rounded-xl text-center font-bold text-white outline-none placeholder:text-zinc-700" />
+                <label className="flex-1 glass-panel rounded-xl flex items-center justify-center cursor-pointer text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
+                  <Camera size={16} className="mr-2"/> {rewardImage ? "FOTO OK" : "CARICA"}
+                  <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, setRewardImage)} accept="image/*" />
+                </label>
+                <button onClick={() => {
+                  if(!rewardName || !rewardCost) return;
+                  setRewards([...rewards, { id: Date.now(), name: rewardName, cost: Number(rewardCost), image: rewardImage, pinned: false }]);
+                  setRewardName(""); setRewardCost(""); setRewardImage(null);
+                }} className="bg-white text-black px-5 rounded-xl font-bold active:scale-95 transition-transform"><Plus size={20} /></button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {rewards.map(r => (
+                <div key={r.id} className="glass-panel p-4 rounded-[2.2rem] relative flex flex-col group">
+                  <button onClick={() => togglePin(r.id)} className={`absolute top-5 left-5 z-10 p-2 rounded-full backdrop-blur-md transition-all ${r.pinned ? 'bg-white text-black' : 'bg-black/60 text-zinc-500 hover:text-white'}`}>
+                    <Pin size={12} fill={r.pinned ? "currentColor" : "none"} />
+                  </button>
+                  <button onClick={() => setRewards(rewards.filter(x => x.id !== r.id))} className="absolute top-5 right-5 z-10 p-2 text-zinc-800 hover:text-red-500"><Trash2 size={12} /></button>
+                  <div className="aspect-square rounded-2xl bg-black border border-white/5 flex items-center justify-center overflow-hidden mb-4 shadow-xl">
+                    {r.image ? <img src={r.image} className="w-full h-full object-cover" /> : <Gift size={32} className="text-zinc-900" />}
+                  </div>
+                  <div className="px-1">
+                    <p className="text-xs font-bold truncate text-white mb-2">{r.name}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-black text-xs italic">{r.cost} CR</span>
+                      <button onClick={() => credits >= r.cost && setCredits(c => c - r.cost)} disabled={credits < r.cost} className={`text-[9px] font-bold uppercase tracking-tighter px-3 py-2 rounded-full transition-all ${credits >= r.cost ? 'bg-emerald-500 text-black active:scale-90 shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-zinc-800 cursor-not-allowed'}`}>Riscatta</button>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {rewards.map(r => (
-                    <div key={r.id} className="glass-panel p-4 rounded-[2.2rem] relative flex flex-col group">
-                      <button onClick={() => togglePin(r.id)} className={`absolute top-5 left-5 z-10 p-2 rounded-full backdrop-blur-md transition-all ${r.pinned ? 'bg-white text-black' : 'bg-black/60 text-zinc-500 hover:text-white'}`}>
-                        <Pin size={12} fill={r.pinned ? "currentColor" : "none"} />
-                      </button>
-                      <button onClick={() => setRewards(rewards.filter(x => x.id !== r.id))} className="absolute top-5 right-5 z-10 p-2 text-zinc-800 hover:text-red-500"><Trash2 size={12} /></button>
-                      <div className="aspect-square rounded-2xl bg-black border border-white/5 flex items-center justify-center overflow-hidden mb-4 shadow-xl">
-                        {r.image ? <img src={r.image} className="w-full h-full object-cover" /> : <Gift size={32} className="text-zinc-900" />}
-                      </div>
-                      <div className="px-1">
-                        <p className="text-xs font-bold truncate text-white mb-2">{r.name}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-white font-black text-xs italic">{r.cost} CR</span>
-                          <button onClick={() => credits >= r.cost && setCredits(c => c - r.cost)} disabled={credits < r.cost} className={`text-[9px] font-bold uppercase tracking-tighter px-3 py-2 rounded-full transition-all ${credits >= r.cost ? 'bg-emerald-500 text-black active:scale-90 shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-zinc-800 cursor-not-allowed'}`}>Riscatta</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </main>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
 
-          <nav className="fixed bottom-6 left-4 right-4 h-20 glass-panel rounded-[2.5rem] flex justify-between items-center px-4 max-w-md mx-auto z-50 shadow-2xl">
-            <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'dashboard' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-               <BookOpen size={22} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
-            </button>
-            <button onClick={() => setActiveTab('stats')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'stats' ? 'text-emerald-500 scale-110 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'text-zinc-600'}`}>
-               <ChartIcon size={22} strokeWidth={activeTab === 'stats' ? 2.5 : 2} />
-            </button>
-            <button onClick={() => {setActiveTab('subjects'); setSelectedSubjectId(null);}} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'subjects' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-               <GraduationCap size={22} strokeWidth={activeTab === 'subjects' ? 2.5 : 2} />
-            </button>
-            <button onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'tasks' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-               <CheckSquare size={22} strokeWidth={activeTab === 'tasks' ? 2.5 : 2} />
-            </button>
-            <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'shop' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-               <ShoppingBag size={22} strokeWidth={activeTab === 'shop' ? 2.5 : 2} />
-            </button>
-          </nav>
-        </div>
-      );
-    };
+      <nav className="fixed bottom-6 left-4 right-4 h-20 glass-panel rounded-[2.5rem] flex justify-between items-center px-4 max-w-md mx-auto z-50 shadow-2xl">
+        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'dashboard' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <BookOpen size={22} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => setActiveTab('stats')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'stats' ? 'text-emerald-500 scale-110 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'text-zinc-600'}`}>
+           <ChartIcon size={22} strokeWidth={activeTab === 'stats' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => {setActiveTab('subjects'); setSelectedSubjectId(null);}} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'subjects' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <GraduationCap size={22} strokeWidth={activeTab === 'subjects' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'tasks' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <CheckSquare size={22} strokeWidth={activeTab === 'tasks' ? 2.5 : 2} />
+        </button>
+        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${activeTab === 'shop' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
+           <ShoppingBag size={22} strokeWidth={activeTab === 'shop' ? 2.5 : 2} />
+        </button>
+      </nav>
+    </div>
+  );
+};
 
-    export default App;
+export default App;
+/* --- FINE PARTE 3 --- */
+
+  
