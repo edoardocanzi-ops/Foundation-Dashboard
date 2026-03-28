@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  BookOpen, 
-  GraduationCap, 
-  ShoppingBag,
-  Plus, 
-  Minus,
-  Trash2, 
-  ChevronLeft,
-  ChevronRight,
-  Pin,
-  Clock,
-  Camera,
-  Gift,
-  CheckSquare,
-  Check
+  BookOpen, GraduationCap, ShoppingBag, Plus, Minus,
+  Trash2, ChevronLeft, ChevronRight, Pin, Clock,
+  Camera, Gift, CheckSquare, Check, LineChart as ChartIcon
 } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine 
+} from 'recharts';
 
 const FIXED_SUBJECTS = [
   { id: 'it-o', name: 'Italiano Orale' }, { id: 'it-s', name: 'Italiano Scritto' },
@@ -25,27 +17,28 @@ const FIXED_SUBJECTS = [
   { id: 'fis', name: 'Ed. Fisica' }, { id: 'sci', name: 'Scienze Naturali' }
 ];
 
-// Configurazione dei Livelli Task
 const TASK_LEVELS = {
-  1: { credits: 0.5, color: '#065f46', name: 'Livello 1', limit: Infinity },
-  2: { credits: 1.0, color: '#4ade80', name: 'Livello 2', limit: 6 },
-  3: { credits: 1.5, color: '#facc15', name: 'Livello 3', limit: 4 },
-  4: { credits: 2.0, color: '#f97316', name: 'Livello 4', limit: 2 },
-  5: { credits: 2.5, color: '#ef4444', name: 'Livello 5', limit: 1 }
+  1: { credits: 0.5, color: '#065f46', name: 'Lv 1', limit: Infinity },
+  2: { credits: 1.0, color: '#4ade80', name: 'Lv 2', limit: 6 },
+  3: { credits: 1.5, color: '#facc15', name: 'Lv 3', limit: 4 },
+  4: { credits: 2.0, color: '#f97316', name: 'Lv 4', limit: 2 },
+  5: { credits: 2.5, color: '#ef4444', name: 'Lv 5', limit: 1 }
 };
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
   
-  // Storage
   const [credits, setCredits] = useState(() => Number(localStorage.getItem('f_credits')) || 0);
   const [grades, setGrades] = useState(() => JSON.parse(localStorage.getItem('f_grades')) || []);
   const [rewards, setRewards] = useState(() => JSON.parse(localStorage.getItem('f_rewards')) || []);
   const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('f_tasks')) || []);
   
-  // Form States
+  // Data corrente formattata YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
   const [newGradeValue, setNewGradeValue] = useState("8.00");
+  const [newGradeDate, setNewGradeDate] = useState(today);
+  
   const [rewardName, setRewardName] = useState("");
   const [rewardCost, setRewardCost] = useState("");
   const [rewardImage, setRewardImage] = useState(null);
@@ -54,7 +47,6 @@ const App = () => {
   const [taskLevel, setTaskLevel] = useState(1);
   const [taskImage, setTaskImage] = useState(null);
 
-  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('f_credits', credits);
     localStorage.setItem('f_grades', JSON.stringify(grades));
@@ -62,7 +54,6 @@ const App = () => {
     localStorage.setItem('f_tasks', JSON.stringify(tasks));
   }, [credits, grades, rewards, tasks]);
 
-  // --- LOGICA VOTI E MEDIE ---
   const getColorForGrade = (val) => {
     const v = parseFloat(val);
     if (v >= 8) return "#059669";
@@ -82,21 +73,20 @@ const App = () => {
 
   const addGrade = () => {
     const val = parseFloat(newGradeValue);
-    setGrades([...grades, { id: Date.now(), subjectId: selectedSubjectId, value: val }]);
+    setGrades([...grades, { id: Date.now(), subjectId: selectedSubjectId, value: val, date: newGradeDate }]);
     if (val >= 8) setCredits(c => c + 1.5);
+    setNewGradeDate(today); // Reset data a oggi
   };
 
   const gradeOptions = [];
   for (let v = 10; v >= 2; v -= 0.25) gradeOptions.push(v.toFixed(2));
 
-  // --- LOGICA REWARDS ---
   const togglePin = (id) => {
     setRewards(rewards.map(r => ({ ...r, pinned: r.id === id ? !r.pinned : false })));
   };
   const pinnedReward = rewards.find(r => r.pinned);
 
-  // --- LOGICA TASKS ---
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = today.slice(0, 7);
   
   const getTaskCountForMonth = (level) => {
     return tasks.filter(t => t.level === level && t.month === currentMonth).length;
@@ -109,17 +99,10 @@ const App = () => {
   const addTask = () => {
     if (!taskName || !canAddTask(taskLevel)) return;
     const newTask = {
-      id: Date.now(),
-      name: taskName,
-      level: taskLevel,
-      image: taskImage,
-      completed: false,
-      month: currentMonth
+      id: Date.now(), name: taskName, level: taskLevel, image: taskImage, completed: false, month: currentMonth
     };
     setTasks([newTask, ...tasks]);
-    setTaskName("");
-    setTaskImage(null);
-    setTaskLevel(1);
+    setTaskName(""); setTaskImage(null); setTaskLevel(1);
   };
 
   const completeTask = (id) => {
@@ -129,7 +112,6 @@ const App = () => {
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: true } : t));
   };
 
-  // --- UPLOAD IMMAGINI ---
   const handleImageUpload = (e, setter) => {
     const file = e.target.files[0];
     if (file) {
@@ -139,7 +121,6 @@ const App = () => {
     }
   };
 
-  // --- COMPONENTI GRAFICI ---
   const AveragePieChart = ({ value }) => {
     const radius = 38;
     const circumference = 2 * Math.PI * radius;
@@ -159,6 +140,49 @@ const App = () => {
     );
   };
 
+  const SmallProgressChart = ({ value }) => {
+    const radius = 22;
+    const circumference = 2 * Math.PI * radius;
+    const progress = (parseFloat(value) / 10) * circumference;
+    const color = getColorForGrade(value);
+    return (
+      <div className="relative flex items-center justify-center mb-2">
+        <svg width="52" height="52" className="transform -rotate-90">
+          <circle cx="26" cy="26" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="transparent" />
+          <circle cx="26" cy="26" r={radius} stroke={color} strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - progress} strokeLinecap="round" />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-bold" style={{ color: value > 0 ? color : '#52525b' }}>{value > 0 ? value : '-'}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Prepara i dati per il grafico stile Investing
+  const chartData = grades
+    .map(g => {
+      const subject = FIXED_SUBJECTS.find(s => s.id === g.subjectId);
+      // Se è un voto vecchio senza data, usa la data di creazione
+      const dateStr = g.date || new Date(g.id).toISOString().split('T')[0];
+      return { ...g, dateStr, subjectName: subject ? subject.name : 'Voto' };
+    })
+    .sort((a, b) => new Date(a.dateStr) - new Date(b.dateStr)); // Ordina cronologicamente
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const color = getColorForGrade(data.value);
+      return (
+        <div className="bg-black border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+          <p className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold mb-1">{label}</p>
+          <p className="text-white text-xs font-bold truncate max-w-[120px] mb-1">{data.subjectName}</p>
+          <p className="text-xl font-black" style={{ color }}>{data.value.toFixed(2)}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen pb-28 max-w-md mx-auto px-6 pt-10 text-white selection:bg-white selection:text-black">
       <header className="mb-10 fade-in flex justify-between items-start">
@@ -169,8 +193,7 @@ const App = () => {
       </header>
 
       <main className="space-y-6">
-        
-        {/* --- TAB: DASHBOARD --- */}
+                {/* --- TAB: DASHBOARD --- */}
         {activeTab === 'dashboard' && (
           <>
             <div className="glass-panel p-6 rounded-[2.5rem] fade-in">
@@ -219,6 +242,53 @@ const App = () => {
           </>
         )}
 
+        {/* --- TAB: STATS (GRAFICO INVESTING) --- */}
+        {activeTab === 'stats' && (
+          <div className="animate-in fade-in duration-300 space-y-6">
+            <div className="flex justify-between items-end">
+              <h2 className="text-3xl font-bold text-white">Mercato Voti</h2>
+              <span className="text-[10px] uppercase font-bold text-emerald-500 tracking-widest flex items-center gap-1">
+                <ChartIcon size={12} /> Trend Globale
+              </span>
+            </div>
+            
+            <div className="glass-panel p-4 pt-6 rounded-[2.5rem] w-full" style={{ height: '350px' }}>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="dateStr" stroke="#52525b" fontSize={10} tickMargin={10} minTickGap={30} />
+                    <YAxis domain={[2, 10]} stroke="#52525b" fontSize={10} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }} />
+                    <ReferenceLine y={6} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1.5} opacity={0.5} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#10b981" 
+                      strokeWidth={3} 
+                      dot={{ fill: '#000', stroke: '#10b981', strokeWidth: 2, r: 4 }} 
+                      activeDot={{ fill: '#10b981', stroke: '#fff', strokeWidth: 2, r: 6 }} 
+                      animationDuration={1500}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-zinc-600 text-xs font-bold uppercase tracking-widest">
+                  Dati insufficienti
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel p-6 rounded-[2.5rem]">
+              <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em] mb-1 font-bold">Media Ponderata Globale</p>
+              <h2 className="text-5xl font-black text-white" style={{ color: getColorForGrade(totalAverage) }}>{totalAverage}</h2>
+              <p className="text-zinc-600 text-xs mt-2 font-medium border-t border-white/5 pt-3">
+                La linea rossa tratteggiata nel grafico indica la soglia della sufficienza (6.00).
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* --- TAB: MATERIE --- */}
         {activeTab === 'subjects' && (
           <div className="animate-in fade-in duration-300">
@@ -229,14 +299,13 @@ const App = () => {
                   <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Ordinate per media</span>
                 </div>
                 
-                {/* Lista verticale ordinata */}
                 <div className="space-y-3">
                   {FIXED_SUBJECTS.map(s => {
                     const avgStr = calculateAverage(s.id);
                     const avgNum = parseFloat(avgStr);
                     return { ...s, avgStr, avgNum };
                   })
-                  .sort((a, b) => b.avgNum - a.avgNum) // Ordinamento decrescente
+                  .sort((a, b) => b.avgNum - a.avgNum)
                   .map(s => {
                     const color = getColorForGrade(s.avgStr);
                     return (
@@ -266,20 +335,32 @@ const App = () => {
                 <button onClick={() => setSelectedSubjectId(null)} className="text-zinc-500 flex items-center gap-1 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">
                   <ChevronLeft size={16} /> Indietro
                 </button>
-                <h2 className="text-3xl font-bold text-white">{FIXED_SUBJECTS.find(s=>s.id === selectedSubjectId).name}</h2>
+                <h2 className="text-3xl font-bold text-white leading-tight">{FIXED_SUBJECTS.find(s=>s.id === selectedSubjectId).name}</h2>
+                
+                {/* Modulo Inserimento Voto con Data */}
                 <div className="glass-panel p-6 rounded-3xl space-y-4">
+                  <input 
+                    type="date" 
+                    value={newGradeDate} 
+                    onChange={e => setNewGradeDate(e.target.value)} 
+                    className="w-full bg-black border border-white/10 rounded-xl p-4 text-white font-bold outline-none focus:border-white transition-colors [&::-webkit-calendar-picker-indicator]:invert"
+                  />
                   <div className="flex gap-3">
                     <select value={newGradeValue} onChange={e => setNewGradeValue(e.target.value)} className="flex-1 bg-black border border-white/10 rounded-xl p-4 text-white font-bold text-center appearance-none outline-none focus:border-white transition-colors">
                       {[...Array(33)].map((_, i) => (10 - i * 0.25).toFixed(2)).map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
-                    <button onClick={addGrade} className="bg-white text-black px-8 rounded-xl font-bold active:scale-95 transition-transform">Salva</button>
+                    <button onClick={addGrade} className="bg-emerald-500 text-black px-8 rounded-xl font-black uppercase tracking-wider active:scale-95 transition-transform shadow-lg shadow-emerald-500/20">Salva</button>
                   </div>
                 </div>
+
                 <div className="space-y-3">
                   {grades.filter(g => g.subjectId === selectedSubjectId).reverse().map(g => (
-                    <div key={g.id} className="glass-panel p-5 rounded-2xl flex justify-between items-center border-l-4" style={{ borderColor: getColorForGrade(g.value) }}>
-                      <span className="font-black text-2xl" style={{ color: getColorForGrade(g.value) }}>{g.value}</span>
-                      <button onClick={() => setGrades(grades.filter(x => x.id !== g.id))} className="text-zinc-800 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                    <div key={g.id} className="glass-panel p-4 rounded-2xl flex justify-between items-center border-l-4" style={{ borderColor: getColorForGrade(g.value) }}>
+                      <div>
+                        <span className="font-black text-2xl block leading-none" style={{ color: getColorForGrade(g.value) }}>{g.value}</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1 block">{g.date ? g.date : 'N/D'}</span>
+                      </div>
+                      <button onClick={() => setGrades(grades.filter(x => x.id !== g.id))} className="text-zinc-700 hover:text-red-500 transition-colors p-2"><Trash2 size={18} /></button>
                     </div>
                   ))}
                 </div>
@@ -287,7 +368,8 @@ const App = () => {
             )}
           </div>
         )}
-                                                                                               {/* --- TAB: TASKS --- */}
+
+        {/* --- TAB: TASKS --- */}
         {activeTab === 'tasks' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex justify-between items-end">
@@ -327,7 +409,6 @@ const App = () => {
                   })}
                 </div>
                 
-                {/* Tracker Limiti Mensili */}
                 <div className="mt-3 flex justify-between px-1">
                   {[1, 2, 3, 4, 5].map(lvl => {
                     const count = getTaskCountForMonth(lvl);
@@ -347,7 +428,6 @@ const App = () => {
               </button>
             </div>
 
-            {/* Lista dei Tasks */}
             <div className="space-y-4">
               {tasks.map(t => {
                 const info = TASK_LEVELS[t.level];
@@ -415,35 +495,4 @@ const App = () => {
                   </div>
                   <div className="px-1">
                     <p className="text-xs font-bold truncate text-white mb-2">{r.name}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-white font-black text-xs italic">{r.cost} CR</span>
-                      <button onClick={() => credits >= r.cost && setCredits(c => c - r.cost)} disabled={credits < r.cost} className={`text-[9px] font-bold uppercase tracking-tighter px-3 py-2 rounded-full transition-all ${credits >= r.cost ? 'bg-emerald-500 text-black active:scale-90 shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-zinc-800 cursor-not-allowed'}`}>Riscatta</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* NAV BAR INFERIORE */}
-      <nav className="fixed bottom-6 left-6 right-6 h-20 glass-panel rounded-[2.5rem] flex justify-between items-center px-6 max-w-md mx-auto z-50 shadow-2xl">
-        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'dashboard' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-           <BookOpen size={22} strokeWidth={activeTab === 'dashboard' ? 2.5 : 2} />
-        </button>
-        <button onClick={() => {setActiveTab('subjects'); setSelectedSubjectId(null);}} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'subjects' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-           <GraduationCap size={22} strokeWidth={activeTab === 'subjects' ? 2.5 : 2} />
-        </button>
-        <button onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'tasks' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-           <CheckSquare size={22} strokeWidth={activeTab === 'tasks' ? 2.5 : 2} />
-        </button>
-        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'shop' ? 'text-white scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'text-zinc-600'}`}>
-           <ShoppingBag size={22} strokeWidth={activeTab === 'shop' ? 2.5 : 2} />
-        </button>
-      </nav>
-    </div>
-  );
-};
-
-export default App;
+                    <div className="f
